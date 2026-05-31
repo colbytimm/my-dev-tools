@@ -24,6 +24,10 @@ python scripts/annotate.py IMAGE -o OUTPUT.png \
 - `--spec PATH` — JSON file containing the annotation list
 - `--spec-json '...'` — inline JSON (handy for one-offs)
 - `--manifest PATH` — compose manifest enabling `"panel": N` coordinates
+- `--caption TEXT` — add a caption bar *outside* the image (no content overlap);
+  `--caption-pos top|bottom` (default bottom), plus `--caption-bg`,
+  `--caption-fg`, `--caption-size`, `--caption-height`. Use for page/source
+  tags so they never sit on top of the screenshot. `\n` for multiline.
 
 The spec is a JSON array of annotation objects (or `{"annotations":[...]}`).
 
@@ -70,6 +74,15 @@ python scripts/annotate.py shot.png -o out.png --spec-json \
 '[{"type":"redact","xy":[100,200,400,240],"mode":"blur","radius":14}]'
 ```
 
+Tag the page without covering content — the label lands in a bar below the
+image instead of on top of it:
+
+```bash
+python scripts/annotate.py shot.png -o out.png \
+  --caption "Page: /settings/account" --spec-json \
+'[{"type":"box","xy":[280,255,400,290],"color":"red","width":3}]'
+```
+
 ## Coordinate tip
 
 Coordinates are either **composite-space** (omit `panel` — origin at the
@@ -77,6 +90,12 @@ top-left of the whole merged image; use for things in the gap between panels,
 like a connector linking two values) or **panel-relative** (`"panel": N` —
 origin at that panel’s content area, so you pass coordinates exactly as
 measured in the original screenshot, even when compose added a label bar).
+
+Annotations are drawn *onto* the pixels, so text placed over content covers
+it. To avoid overlap: put labels in known-empty space (margins, or the gap
+between composed panels), or use `--caption` to push page/source tags into a
+bar outside the image entirely. Opaque `callout` bubbles stay readable over
+content but still cover it.
 
 Don’t guess pixel values. If your agent browser can return element bounding
 boxes (Playwright `element.bounding_box()`, DOM `getBoundingClientRect()`),

@@ -60,6 +60,31 @@ def rounded(d, box, radius, **kw):
     d.rounded_rectangle(box, radius=radius, **kw)
 
 
+def add_caption(img, text, pos, bg, fg, size, height):
+    """Append a solid caption bar OUTSIDE the image (above or below), so the
+    text never overlaps the content. Annotations are already baked into `img`
+    at this point, so the whole annotated image just shifts as a unit — pixel
+    and panel coordinates stay correct regardless of bar position."""
+    img = img.convert("RGBA")
+    font = load_font(size, bold=True)
+    measure = ImageDraw.Draw(img)
+    lines = text.split("\n")
+    tw = max(measure.textbbox((0, 0), ln, font=font)[2] for ln in lines)
+    lh = measure.textbbox((0, 0), "Ag", font=font)[3]
+    th = lh * len(lines)
+    if height is None:
+        height = th + 20
+    canvas = Image.new("RGBA", (img.width, img.height + height), col(bg))
+    bar_y = 0 if pos == "top" else img.height
+    canvas.alpha_composite(img, (0, height if pos == "top" else 0))
+    d = ImageDraw.Draw(canvas)
+    ty = bar_y + (height - th) // 2
+    for i, ln in enumerate(lines):
+        lw = d.textbbox((0, 0), ln, font=font)[2]
+        d.text(((img.width - lw) // 2, ty + i * lh), ln, fill=col(fg), font=font)
+    return canvas
+
+
 def render(img, spec, panels):
     base = img.convert("RGBA")
     overlay = Image.new("RGBA", base.size, (0, 0, 0, 0))
@@ -165,6 +190,12 @@ def main():
     g.add_argument("--spec", help="path to JSON spec file")
     g.add_argument("--spec-json", help="inline JSON spec string")
     p.add_argument("--manifest", help="compose manifest for panel-relative coords")
+    p.add_argument("--caption", help="add a caption bar outside the image (no overlap)")
+    p.add_argument("--caption-pos", default="bottom", choices=["top", "bottom"])
+    p.add_argument("--caption-bg", default="#1f2937", help="caption bar color")
+    p.add_argument("--caption-fg", default="white", help="caption text color")
+    p.add_argument("--caption-size", type=int, default=18)
+    p.add_argument("--caption-height", type=int, help="bar height (default: auto-fit)")
     a = p.parse_args()
 
     spec = json.loads(a.spec_json) if a.spec_json else json.load(open(a.spec))
@@ -176,6 +207,9 @@ def main():
 
     img = Image.open(a.image)
     out = render(img, spec, panels)
+    if a.caption:
+        out = add_caption(out, a.caption, a.caption_pos, a.caption_bg,
+                          a.caption_fg, a.caption_size, a.caption_height)
     if a.out.lower().endswith((".jpg", ".jpeg")):
         out.convert("RGB").save(a.out)
     else:
