@@ -384,7 +384,47 @@ declared unbounded arrays.
 
 ---
 
-## 10. Validation checklists
+## 10. Optimizing an existing account
+
+The workflow above designs a model from requirements. To **review or optimize an
+account that already exists**, pair this skill with the companion
+**`cosmosdb-inspect`** skill, which reads the live account (read-only, via the
+Azure CLI) and emits an *observed model* in this skill's spec shape, enriched
+with real Azure Monitor metrics.
+
+```bash
+# 1. Reverse-engineer the live account into an observed model
+python ../cosmosdb-inspect/scripts/cosmos_inspect.py \
+  -a <account> -g <resource-group> -o observed.json
+
+# 2. Lint it against documented limits and anti-patterns
+python scripts/model_lint.py --spec observed.json
+
+# 3. Cost the current shape
+python scripts/ru_cost_estimator.py --spec observed.json
+```
+
+Then drive the optimization:
+
+1. **Read the inspector's signals first.** Hot partitions, 429 throttling, and
+   over-provisioning are *runtime* facts the static lint can't see — they come
+   from `NormalizedRUConsumption`, `TotalRequests` (429s), and throughput.
+2. **Map each signal to a §6/§8 remedy.** Hot partition → higher-cardinality or
+   hierarchical key (note: a partition key can't be changed in place — it
+   requires a new container and a data copy). Throttling with even distribution
+   → raise throughput. Over-provisioned → lower RU/s or switch manual↔autoscale.
+   Over-indexing → exclude unqueried paths. `/id` key with queries → repartition.
+3. **Propose a redesigned spec**, then **compare costs side by side** with
+   `ru_cost_estimator.py` (current `observed.json` vs. proposed) so the
+   trade-off is quantified, not asserted.
+4. **Mind the data-plane gap.** The inspector's item size is a
+   storage÷document-count proxy, and it can't tell you *which queries* are
+   expensive or which indexed paths are unused. Confirm those with the SDK,
+   query stats, or the Azure portal before committing to a redesign.
+
+---
+
+## 11. Validation checklists
 
 **Requirements complete** (gate before writing the data model):
 
