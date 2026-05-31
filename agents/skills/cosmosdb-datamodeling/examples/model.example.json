@@ -1,0 +1,55 @@
+{
+  "application": "Online store (orders + product catalog with reviews)",
+  "throughput_mode": "autoscale",
+  "regions": 1,
+  "containers": [
+    {
+      "name": "orders",
+      "purpose": "Customer profile with embedded recent orders (one-to-few, read together)",
+      "partition_key": "/customerId",
+      "partition_key_cardinality": 250000,
+      "estimated_item_kb": 18,
+      "estimated_logical_partition_gb": 0.02,
+      "storage_gb": 4.5,
+      "unbounded_arrays": [],
+      "access_patterns": [
+        { "name": "Get customer + recent orders", "ops_per_sec": 1200, "ru_per_op": 18, "cross_partition": false },
+        { "name": "Create order", "ops_per_sec": 150, "ru_per_op": 25, "cross_partition": false }
+      ],
+      "sample_document": {
+        "id": "cust-8841",
+        "type": "customer",
+        "customerId": "cust-8841",
+        "name": "Dana Reyes",
+        "email": "dana@example.com",
+        "recentOrders": [
+          { "orderId": "ord-1001", "total": 84.5, "status": "shipped", "placedAt": "2026-05-20T14:03:00Z" },
+          { "orderId": "ord-1042", "total": 12.0, "status": "delivered", "placedAt": "2026-05-28T09:11:00Z" }
+        ]
+      }
+    },
+    {
+      "name": "productReviews",
+      "purpose": "Product catalog plus its reviews, co-located by productId (identifying relationship)",
+      "partition_key": "/productId",
+      "partition_key_cardinality": 40000,
+      "estimated_item_kb": 2,
+      "estimated_logical_partition_gb": 0.05,
+      "storage_gb": 2.5,
+      "unbounded_arrays": [],
+      "access_patterns": [
+        { "name": "Get product details", "ops_per_sec": 3000, "ru_per_op": 2, "cross_partition": false },
+        { "name": "List reviews for a product", "ops_per_sec": 800, "ru_per_op": 5, "cross_partition": false },
+        { "name": "Search products by category", "ops_per_sec": 200, "ru_per_op": 12, "cross_partition": true }
+      ],
+      "sample_document": {
+        "id": "prod-552",
+        "type": "product",
+        "productId": "prod-552",
+        "name": "Trail Running Shoe",
+        "category": "footwear",
+        "salePrice": 119.99
+      }
+    }
+  ]
+}

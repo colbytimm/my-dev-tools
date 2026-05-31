@@ -1,0 +1,92 @@
+{
+  "_comment": "Representative captured `az ... -o json` outputs, used to exercise the inspector's pure transform functions offline. Shapes follow the Azure CLI / Azure Monitor REST schemas.",
+  "account_show": {
+    "name": "contoso-shop",
+    "enableMultipleWriteLocations": false,
+    "consistencyPolicy": { "defaultConsistencyLevel": "Session" },
+    "locations": [
+      { "locationName": "East US", "failoverPriority": 0 },
+      { "locationName": "West US", "failoverPriority": 1 }
+    ]
+  },
+  "container_orders": {
+    "name": "orders",
+    "resource": {
+      "id": "orders",
+      "partitionKey": { "paths": ["/customerId"], "kind": "Hash" },
+      "defaultTtl": null,
+      "indexingPolicy": {
+        "indexingMode": "consistent",
+        "automatic": true,
+        "includedPaths": [{ "path": "/*" }],
+        "excludedPaths": [{ "path": "/\"_etag\"/?" }],
+        "compositeIndexes": []
+      }
+    }
+  },
+  "container_events_hpk": {
+    "name": "events",
+    "resource": {
+      "id": "events",
+      "partitionKey": { "paths": ["/tenantId", "/userId", "/id"], "kind": "MultiHash" },
+      "defaultTtl": 2592000,
+      "indexingPolicy": {
+        "indexingMode": "consistent",
+        "automatic": true,
+        "includedPaths": [{ "path": "/*" }],
+        "excludedPaths": []
+      }
+    }
+  },
+  "throughput_autoscale": {
+    "resource": { "autoscaleSettings": { "maxThroughput": 40000 } }
+  },
+  "throughput_manual": {
+    "resource": { "throughput": 4000 }
+  },
+  "normalized_ru_hot": {
+    "value": [
+      {
+        "name": { "value": "NormalizedRUConsumption" },
+        "timeseries": [
+          {
+            "metadatavalues": [{ "name": { "value": "PartitionKeyRangeId" }, "value": "0" }],
+            "data": [{ "maximum": 98.0 }, { "maximum": 100.0 }]
+          },
+          {
+            "metadatavalues": [{ "name": { "value": "PartitionKeyRangeId" }, "value": "1" }],
+            "data": [{ "maximum": 22.0 }, { "maximum": 31.0 }]
+          },
+          {
+            "metadatavalues": [{ "name": { "value": "PartitionKeyRangeId" }, "value": "2" }],
+            "data": [{ "maximum": 18.0 }, { "maximum": 25.0 }]
+          }
+        ]
+      }
+    ]
+  },
+  "total_requests": {
+    "value": [
+      { "name": { "value": "TotalRequests" },
+        "timeseries": [{ "data": [{ "total": 100000 }, { "total": 120000 }] }] }
+    ]
+  },
+  "requests_429": {
+    "value": [
+      { "name": { "value": "TotalRequests" },
+        "timeseries": [{ "data": [{ "total": 9000 }, { "total": 13000 }] }] }
+    ]
+  },
+  "data_usage": {
+    "value": [
+      { "name": { "value": "DataUsage" },
+        "timeseries": [{ "data": [{ "maximum": 5368709120 }] }] }
+    ]
+  },
+  "document_count": {
+    "value": [
+      { "name": { "value": "DocumentCount" },
+        "timeseries": [{ "data": [{ "maximum": 250000 }] }] }
+    ]
+  }
+}

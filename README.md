@@ -22,8 +22,18 @@ Draw annotations on an image (boxes, ellipses, arrows, labeled connectors, callo
 
 ![A screenshot marked up with a highlight, a box, a blurred redaction, a callout, and a caption bar](docs/images/annotate-profile.png)
 
+#### [cosmosdb-datamodeling](agents/skills/cosmosdb-datamodeling/SKILL.md)
+
+An interactive, requirements-driven workflow for designing an Azure Cosmos DB for NoSQL data model. It captures access patterns, decides embed-vs-reference and partition keys, applies scaling patterns (hierarchical/synthetic keys, write sharding, data binning, TTL), and produces two artifacts — a requirements scratchpad and a final data model — grounded in current Microsoft Learn guidance. Ships stdlib-only helper scripts for RU/cost estimation and for linting a model against documented service limits.
+
+#### [cosmosdb-inspect](agents/skills/cosmosdb-inspect/SKILL.md)
+
+Inspect a live Azure Cosmos DB for NoSQL account (read-only, via the Azure CLI) and emit an "observed model" plus optimization signals. It collects container configuration (partition keys, indexing, TTL, throughput) and Azure Monitor metrics (normalized RU consumption for hot-partition detection, 429 throttling, storage, document count), writing JSON in the same shape `cosmosdb-datamodeling` consumes. Requires `az` and `az login`; pure transform logic is unit-tested offline.
+
 #### Used together
 
 `image-compose` lays out a comparison and emits a manifest; `image-annotate` reads that manifest to draw on each panel with `"panel": N` — coordinates measured in the original screenshots map straight through. Here two calculations are composed, then boxed and connected to show which values match and which differ.
 
 ![Two calculations composed side by side, with green boxes and a "match" connector on equal values and red boxes with a "differs" connector on the divergent rows](docs/images/compose-annotate-comparison.png)
+
+`cosmosdb-inspect` reverse-engineers a live account into an observed model and surfaces runtime signals (hot partitions, throttling, over-provisioning); `cosmosdb-datamodeling` lints that model against service limits, costs it, and drives a redesign — so the two move you from "what does my account look like and where does it hurt" to "design and cost the fix."
