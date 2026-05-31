@@ -148,8 +148,11 @@ def monthly_cost(required_ru, storage_gb, prices):
 
 
 def build_report(spec, prices):
-    containers = spec.get("containers")
-    if not containers:
+    if "containers" in spec:
+        containers = spec["containers"]
+        if not isinstance(containers, list):
+            _err("'containers' must be a list")
+    else:
         # Allow a flat single-workload spec (no "containers" wrapper).
         containers = [spec]
 

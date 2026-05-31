@@ -161,12 +161,17 @@ def check_container(c, f):
 
 def lint(spec):
     f = Findings()
-    containers = spec.get("containers")
-    if not containers:
+    if "containers" in spec:
+        containers = spec["containers"]
+        if not isinstance(containers, list):
+            f.error("<spec>", "spec/invalid", "'containers' must be a list")
+            return f
+        if not containers:
+            f.warn("<spec>", "spec/empty", "'containers' is empty -- nothing to lint")
+            return f
+    else:
+        # Flat single-container spec (no "containers" wrapper).
         containers = [spec]
-    if not isinstance(containers, list):
-        f.error("<spec>", "spec/invalid", "'containers' must be a list")
-        return f
     for c in containers:
         if isinstance(c, dict):
             check_container(c, f)
