@@ -44,7 +44,31 @@ def attr(pattern, text, default=None):
     return m.group(1) if m else default
 
 
-def add_pills(svg, fill=None, stroke=None, radius=4, padx=7, pady=2, inset=7):
+# Approximate per-character advance width as a fraction of the font size, so the
+# pill hugs the text instead of using a flat (over-wide) estimate. Group titles
+# are mostly lowercase + digits + punctuation (e.g. "snet-app 10.0.3.0/24").
+_NARROW = set(" .,:;'!|iIjl()[]{}/\\-ftr")
+_WIDE = set("mwMW")
+_UPPER = set("ABCDEFGHKNOPQRSUVXYZ")
+
+
+def text_width(label, fs):
+    total = 0.0
+    for ch in label:
+        if ch == " ":
+            total += 0.27
+        elif ch in _NARROW:
+            total += 0.30
+        elif ch in _WIDE:
+            total += 0.82
+        elif ch in _UPPER:
+            total += 0.62
+        else:  # most lowercase + digits
+            total += 0.50
+    return total * fs
+
+
+def add_pills(svg, fill=None, stroke=None, radius=4, padx=6, pady=2, inset=7):
     # Real shape groups, in document order: (key, start, class_attr).
     shapes = []
     for m in GROUP.finditer(svg):
@@ -88,7 +112,9 @@ def add_pills(svg, fill=None, stroke=None, radius=4, padx=7, pady=2, inset=7):
         pill_fill = fill or attr(r'<rect[^>]*\bfill="([^"]+)"', rect_tag) or "#FFFFFF"
         pill_stroke = stroke or attr(r'<rect[^>]*\bstroke="([^"]+)"', rect_tag) or "#888888"
 
-        w = len(label) * fs * 0.55 + 2 * padx
+        w = text_width(label, fs) + 2 * padx
+        # Never let the pill exceed the box interior.
+        w = min(w, bw - 2 * inset)
         h = fs + 2 * pady
         # Sit the pill just inside the box's top edge.
         py = by + inset
