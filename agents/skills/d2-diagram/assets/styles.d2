@@ -53,3 +53,33 @@ classes: {
   queue: {shape: queue; style: {fill: "#FEF7E0"; stroke: "#FBBC04"}}
   authz: {shape: hexagon; style: {fill: "#FFF4CE"; stroke: "#C19C00"; bold: true}}
 }
+
+# ============================================================================
+# Branded palettes (ready-to-paste). d2 can't load a custom theme file, but you
+# can recolor any built-in theme's palette slots. Pair with a clean base theme,
+# e.g. `--preset default` / `--theme 0`. Slots: N1 (darkest text) -> N7 (canvas);
+# B1 (darkest primary) -> B6 (lightest fill); AA*/AB* are accents.
+#
+# Copy ONE block into your diagram's own vars (not here, so it stays opt-in):
+#
+#   vars: {
+#     d2-config: {
+#       theme-overrides: { ...paste a palette below... }
+#     }
+#   }
+#
+# --- Corporate Blue ---------------------------------------------------------
+#   N1: "#0A1F44"; N7: "#FFFFFF"
+#   B1: "#0B3D91"; B2: "#1457B0"; B3: "#2E72CC"; B4: "#6FA3E0"; B5: "#B7D2F2"; B6: "#EAF2FC"
+#   AA2: "#0F766E"; AA4: "#5EB1A8"; AA5: "#C5E8E3"; AB4: "#B0792E"; AB5: "#EAD7B7"
+#
+# --- Slate / Graphite (neutral, professional) -------------------------------
+#   N1: "#1A2024"; N7: "#FFFFFF"
+#   B1: "#334155"; B2: "#475569"; B3: "#64748B"; B4: "#94A3B8"; B5: "#CBD5E1"; B6: "#EEF2F6"
+#   AA2: "#0E7490"; AA4: "#5FAEC4"; AA5: "#CDE8F0"; AB4: "#9A6B2F"; AB5: "#E6D5BA"
+#
+# --- Forest Green -----------------------------------------------------------
+#   N1: "#14241B"; N7: "#FFFFFF"
+#   B1: "#14532D"; B2: "#166534"; B3: "#2E7D44"; B4: "#6DAE84"; B5: "#B7DCC4"; B6: "#E9F5EE"
+#   AA2: "#92400E"; AA4: "#C98A4B"; AA5: "#EBD3B5"; AB4: "#1E5E8A"; AB5: "#BBD6EA"
+# ============================================================================
