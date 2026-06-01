@@ -86,6 +86,14 @@ def build_render_cmd(src: Path, out: Path, args, bundle: bool = True):
         cmd += ["--sketch"]
     if args.pad is not None:
         cmd += ["--pad", str(args.pad)]
+    # ELK spacing knobs only apply to the elk engine. They are the main lever for
+    # spreading out a cramped diagram so labels stop overlapping lines/icons.
+    if args.layout == "elk":
+        if args.elk_node_spacing is not None:
+            cmd += ["--elk-nodeNodeBetweenLayers", str(args.elk_node_spacing)]
+            cmd += ["--elk-edgeNodeBetweenLayers", str(args.elk_node_spacing)]
+        if args.elk_padding is not None:
+            cmd += ["--elk-padding", args.elk_padding]
     cmd += [str(src), str(out)]
     return cmd
 
@@ -213,7 +221,18 @@ def main():
     parser.add_argument("--dark-theme", type=int, help="dark-mode theme id")
     parser.add_argument(
         "--layout", choices=["dagre", "elk", "tala"],
-        help="layout engine (default: dagre; elk for dense graphs; tala needs install)",
+        help="layout engine. Prefer 'elk' for architecture/flow diagrams: it routes "
+             "edges orthogonally and places labels with far less overlap than the "
+             "default dagre. (tala needs a separate install.)",
+    )
+    parser.add_argument(
+        "--elk-node-spacing", type=int, metavar="N",
+        help="with --layout elk: spacing (px) between nodes and between nodes/edges. "
+             "Raise it (e.g. 90-120) to de-clutter a cramped diagram. d2 default 70/40.",
+    )
+    parser.add_argument(
+        "--elk-padding", metavar="SPEC",
+        help="with --layout elk: container padding, e.g. \"[top=60,left=50,bottom=50,right=50]\".",
     )
     parser.add_argument("--sketch", action="store_true", help="hand-drawn style")
     parser.add_argument("--pad", type=int, help="padding in pixels around the diagram")

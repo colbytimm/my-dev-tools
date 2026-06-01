@@ -69,8 +69,10 @@ the image *be* the shape.
 
 Group components into layered containers (client → edge → application → data),
 give each tier a `class` for visual consistency, and label connections with the
-protocol or action. The default `dagre` layout suits most flows; switch to `elk`
-(`--layout elk`) for dense, many-edged graphs. See **`examples/software-arch.d2`**
+protocol or action. **Render with `elk`** (`--layout elk`, or set
+`layout-engine: elk`) — its orthogonal routing keeps labels and edges from
+overlapping; raise `--elk-node-spacing` if it's still tight.
+See **`examples/software-arch.d2`**
 for a complete 3-tier example (containers, classes, a `sql_table`, and a request
 flow). General guidance on architecture-diagram structure:
 [Atlassian: architecture diagrams](https://www.atlassian.com/work-management/project-management/architecture-diagram).
@@ -98,15 +100,25 @@ flow). General guidance on architecture-diagram structure:
 3. See **`examples/aws-arch.d2`** for a complete, validated AWS example whose
    icon URLs all came from `icons.py`.
 
+## Other diagram types
+
+- **Sequence diagrams** (auth flows, request/response): set `shape: sequence_diagram`
+  at the root; child objects become lifelines and connections become ordered
+  messages. A self-edge is a self-call; `a -> a: label`. See **`examples/auth-flow.d2`**.
+- **User-journey / flowcharts**: `oval` start/end, plain steps, `diamond` decisions,
+  and edges labeled `yes`/`no` for branches and retry loops. See **`examples/user-flow.d2`**
+  (also shows `sketch` style).
+
 ## Rendering & embedding
 
 ```bash
 # SVG (default; no dependencies, ideal for web/markdown). Output path derived from input.
 python scripts/render.py examples/software-arch.d2
 
-# Options: format, theme, dark theme, layout, sketch, padding
+# Options: format, theme, layout, spacing, sketch, padding.
+# --layout elk + --elk-node-spacing is the go-to fix for a cramped/overlapping diagram.
 python scripts/render.py examples/aws-arch.d2 -o out.svg \
-  --theme 1 --layout elk --sketch --pad 40
+  --theme 1 --layout elk --elk-node-spacing 100 --pad 40
 
 # Validate or autoformat before committing
 python scripts/render.py examples/aws-arch.d2 --validate
@@ -127,6 +139,36 @@ python scripts/render.py examples/software-arch.d2 --md README.md --md-marker ar
   self-contained file. If the icon host is unreachable at render time, `render.py`
   retries with `--no-bundle`, keeping icons as remote refs that load when the image
   is viewed online. Pass `--no-bundle` explicitly to force this.
+
+## Readability — preventing label / icon / line overlap
+
+Overlapping labels, edges, and icons are the most common quality problem. Apply
+these rules when authoring (they are baked into the examples):
+
+- **Use the ELK layout for architecture & flow diagrams** — `--layout elk` (or
+  `layout-engine: elk` in `vars.d2-config`). ELK routes edges orthogonally and
+  places labels with far less overlap than the default `dagre`. This is the single
+  biggest win. If a diagram is still cramped, spread it out:
+  `--layout elk --elk-node-spacing 100` (and/or `--elk-padding "[top=60,left=50,bottom=50,right=50]"`).
+- **Keep edge labels short** — ideally ≤ 3 words (`3. GraphQL (Bearer)`, not
+  `3. GraphQL query with bearer access token`). Push detail into the *node* label
+  or drop it. Wrap any unavoidably long label with `\n`.
+- **Don't put `icon:` on a container that also carries an important label.** A
+  container anchors both its label and its icon at the top, so on tight layouts
+  they crowd each other. Put icons on **leaf** nodes; label grouping containers
+  (VPCs, subnets, tiers) with text only.
+- **One short label per icon'd node.** A node with an icon *and* a long multi-line
+  label squeezes the icon — prefer a concise name plus the icon.
+- **Give the diagram air** with `--pad 40` (or more) and split very large systems
+  into multiple focused diagrams.
+- **Sequence diagrams** ignore the layout engine, so readability there is all about
+  concise, `\n`-wrapped message labels. d2 masks the lifeline/arrow *behind* each
+  label so lines don't strike through text — this is honored by d2's native
+  SVG/PNG export (and any compliant SVG renderer). If you rasterize the SVG with a
+  tool that ignores SVG masks (some `rsvg`/`cairo` builds), lines can appear to run
+  through labels; prefer `render.py`'s own PNG export, which uses d2 directly.
+- **Always eyeball the rendered output.** If labels still collide, in order: switch
+  to `elk`, raise `--elk-node-spacing`, shorten labels, then bump `--pad`.
 
 ## Best practices
 

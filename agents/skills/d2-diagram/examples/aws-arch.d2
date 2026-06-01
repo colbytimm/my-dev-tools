@@ -2,16 +2,22 @@
 #
 # Icon URLs were resolved with `python scripts/icons.py search <term> --provider aws`
 # and are pasted verbatim. Use one provider's icon set per diagram.
+#
+# Uses the elk layout for clean routing; icons sit on leaf nodes while the AWS
+# Cloud / region containers are labeled in text only (see SKILL.md "Readability").
 
 vars: {
   d2-config: {
-    layout-engine: dagre
+    layout-engine: elk
+    pad: 40
   }
 }
 
-title: |md
-  # Highly-Available Web App on AWS
-| {near: top-center}
+title: Highly-Available Web App on AWS {
+  near: top-center
+  shape: text
+  style: {font-size: 26; bold: true}
+}
 
 user: User {shape: person}
 

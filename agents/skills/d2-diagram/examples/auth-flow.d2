@@ -1,0 +1,28 @@
+# Sequence diagram: OIDC (Authorization Code + PKCE) login for a SPA, with an
+# API-gateway JWT check and a fine-grained authorization check.
+#
+# Sequence diagrams ignore the layout engine, so readability here comes from
+# concise, \n-wrapped message labels (see SKILL.md "Readability"). d2 masks the
+# lifelines behind labels so lines don't strike through text in its native export.
+
+shape: sequence_diagram
+
+browser: Browser (SPA)
+idp: Identity Provider
+apim: API Gateway
+api: API Service
+authz: Authorization (AuthZed/SpiceDB)
+
+browser -> idp: 1. /authorize\n(PKCE challenge)
+idp -> browser: 2. Login + MFA prompt
+browser -> idp: 3. Credentials
+idp -> browser: 4. Auth code
+browser -> idp: 5. Exchange code\n(+ PKCE verifier)
+idp -> browser: 6. id_token +\naccess_token
+browser -> apim: 7. API call\n(Bearer token)
+apim -> apim: 8. validate-jwt
+apim -> api: 9. Forward
+api -> authz: 10. CheckPermission
+authz -> api: 11. allow / deny
+api -> apim: 12. Response
+apim -> browser: 13. Data / 403
