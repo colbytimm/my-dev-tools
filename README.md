@@ -22,6 +22,10 @@ Draw annotations on an image (boxes, ellipses, arrows, labeled connectors, callo
 
 ![A screenshot marked up with a highlight, a box, a blurred redaction, a callout, and a caption bar](docs/images/annotate-profile.png)
 
+#### [d2-diagram](agents/skills/d2-diagram/SKILL.md)
+
+Author software- and cloud-architecture diagrams as code with [d2](https://d2lang.com), render them to SVG/PNG/PDF, and embed them into markdown. Ships a lookup for the correct AWS/GCP/Azure service icons (whose hosted URLs are URL-encoded and impossible to guess) and a renderer that degrades gracefully when raster export or the icon host is unavailable — falling back to SVG, or to remote icon references, instead of failing. Pure-stdlib scripts; requires the `d2` CLI.
+
 #### [cosmosdb-datamodeling](agents/skills/cosmosdb-datamodeling/SKILL.md)
 
 An interactive, requirements-driven workflow for designing an Azure Cosmos DB for NoSQL data model. It captures access patterns, decides embed-vs-reference and partition keys, applies scaling patterns (hierarchical/synthetic keys, write sharding, data binning, TTL), and produces two artifacts — a requirements scratchpad and a final data model — grounded in current Microsoft Learn guidance. Ships stdlib-only helper scripts for RU/cost estimation and for linting a model against documented service limits.

@@ -1,0 +1,65 @@
+# AWS cloud architecture: a highly-available web application.
+#
+# Icon URLs were resolved with `python scripts/icons.py search <term> --provider aws`
+# and are pasted verbatim. Use one provider's icon set per diagram.
+
+vars: {
+  d2-config: {
+    layout-engine: dagre
+  }
+}
+
+title: |md
+  # Highly-Available Web App on AWS
+| {near: top-center}
+
+user: User {shape: person}
+
+dns: Route 53 {
+  icon: https://icons.terrastruct.com/aws%2FNetworking%20&%20Content%20Delivery%2FAmazon-Route-53_light-bg.svg
+}
+
+cdn: CloudFront {
+  icon: https://icons.terrastruct.com/aws%2FNetworking%20&%20Content%20Delivery%2FAmazon-CloudFront.svg
+}
+
+aws: AWS Cloud {
+  style.stroke: "#FF9900"
+  style.stroke-width: 2
+
+  region: us-east-1 {
+    style.fill: "#F5F5F5"
+
+    lb: Application Load Balancer {
+      icon: https://icons.terrastruct.com/aws%2FNetworking%20&%20Content%20Delivery%2FElastic-Load-Balancing.svg
+    }
+
+    web: Web Tier (Auto Scaling) {
+      ec2a: EC2 {icon: https://icons.terrastruct.com/aws%2FCompute%2F_Instance%2FAmazon-EC2_Instance_light-bg.svg}
+      ec2b: EC2 {icon: https://icons.terrastruct.com/aws%2FCompute%2F_Instance%2FAmazon-EC2_Instance_light-bg.svg}
+    }
+
+    fn: Lambda (async jobs) {
+      icon: https://icons.terrastruct.com/aws%2FCompute%2FAWS-Lambda.svg
+    }
+
+    db: RDS (Multi-AZ) {
+      icon: https://icons.terrastruct.com/aws%2FDatabase%2FAmazon-RDS.svg
+    }
+  }
+
+  assets: S3 (static assets) {
+    icon: https://icons.terrastruct.com/aws%2FStorage%2FAmazon-Simple-Storage-Service-S3.svg
+  }
+}
+
+user -> dns: resolve
+dns -> cdn: route
+cdn -> aws.region.lb: HTTPS
+cdn -> aws.assets: cache static
+aws.region.lb -> aws.region.web.ec2a: forward
+aws.region.lb -> aws.region.web.ec2b: forward
+aws.region.web.ec2a -> aws.region.db: query
+aws.region.web.ec2b -> aws.region.db: query
+aws.region.web.ec2a -> aws.region.fn: enqueue
+aws.region.fn -> aws.region.db: write
