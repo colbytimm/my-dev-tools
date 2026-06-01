@@ -21,10 +21,14 @@ title: Order Service — 3-Tier Architecture {
   style: {font-size: 26; bold: true}
 }
 
-# Reusable styles so similar components look the same. The `tier` class lifts the
-# container label outside the box so routed edges never draw over it.
+# Reusable styles so similar components look the same. The `tier` class makes each
+# grouping container a titled box: a filled, bordered, bold top-left header that
+# d2 keeps clear of the edges routed into the tier's children.
 classes: {
-  tier: {label.near: outside-top-left}
+  tier: {
+    label.near: top-left
+    style: {fill: "#EDEFF5"; stroke: "#5B6B8C"; stroke-width: 2; bold: true; font-color: "#33415C"}
+  }
   edge: {style: {fill: "#E8F0FE"; stroke: "#4285F4"}}
   service: {style: {fill: "#E6F4EA"; stroke: "#34A853"}}
   datastore: {shape: cylinder; style: {fill: "#FCE8E6"; stroke: "#EA4335"}}

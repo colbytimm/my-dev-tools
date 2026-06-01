@@ -29,22 +29,23 @@ cdn: CloudFront {
   icon: https://icons.terrastruct.com/aws%2FNetworking%20&%20Content%20Delivery%2FAmazon-CloudFront.svg
 }
 
-# Grouping containers put their label outside-top-left so routed edges don't cross it.
+# Grouping containers are "titled boxes": filled + bordered with a bold top-left
+# header, which d2 keeps clear of the edges routed into their children.
 aws: AWS Cloud {
-  label.near: outside-top-left
-  style.stroke: "#FF9900"
-  style.stroke-width: 2
+  label.near: top-left
+  style: {fill: "#FFF7EC"; stroke: "#FF9900"; stroke-width: 2; bold: true; font-color: "#8A5A00"}
 
   region: us-east-1 {
-    label.near: outside-top-left
-    style.fill: "#F5F5F5"
+    label.near: top-left
+    style: {fill: "#F2F4F7"; stroke: "#5B6B8C"; stroke-width: 2; bold: true; font-color: "#33415C"}
 
     lb: Application Load Balancer {
       icon: https://icons.terrastruct.com/aws%2FNetworking%20&%20Content%20Delivery%2FElastic-Load-Balancing.svg
     }
 
     web: Web Tier (Auto Scaling) {
-      label.near: outside-top-left
+      label.near: top-left
+      style: {fill: "#E8EDF7"; stroke: "#5B6B8C"; stroke-width: 2; bold: true; font-color: "#33415C"}
       ec2a: EC2 {icon: https://icons.terrastruct.com/aws%2FCompute%2F_Instance%2FAmazon-EC2_Instance_light-bg.svg}
       ec2b: EC2 {icon: https://icons.terrastruct.com/aws%2FCompute%2F_Instance%2FAmazon-EC2_Instance_light-bg.svg}
     }
