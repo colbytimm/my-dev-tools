@@ -19,6 +19,9 @@ and embed them. Three scripts support the workflow:
 - `scripts/title_pills.py` — post-process an SVG to draw masking pills behind group
   titles (also wired into `render.py --title-pills`).
 
+Plus shared assets: `assets/styles.d2` (importable layout + classes) and
+`assets/themes.json` (named render presets) — see **Theming**.
+
 ## Workflow
 
 1. **Write a `.d2` file.** Keep the source next to the doc it illustrates so it
@@ -125,6 +128,9 @@ python scripts/render.py examples/aws-arch.d2 -o out.svg \
 # SVG with masking pills behind every group title (lines can't cross a title)
 python scripts/render.py examples/software-arch.d2 --title-pills
 
+# Apply a named theme preset (see Theming below); --list-presets to see them
+python scripts/render.py examples/software-arch.d2 --preset c4
+
 # Validate or autoformat before committing
 python scripts/render.py examples/aws-arch.d2 --validate
 python scripts/render.py examples/aws-arch.d2 --fmt
@@ -208,6 +214,33 @@ these rules when authoring (they are baked into the examples):
   through labels; prefer `render.py`'s own PNG export, which uses d2 directly.
 - **Always eyeball the rendered output.** If labels still collide, in order: switch
   to `elk`, raise `--elk-node-spacing`, shorten labels, then bump `--pad`.
+
+## Theming
+
+d2 ships built-in themes selected by numeric id (`--theme` / `--dark-theme`, or
+in-file `vars.d2-config.theme-id`). Run `d2 themes` for the list — e.g. Neutral
+0/1, Flagship 3, Aubergine 7, Origami 302, **C4 303** (good for architecture);
+dark 200/201. Two skill assets make theming reusable:
+
+- **Named render presets** — `assets/themes.json` maps friendly names to a theme id
+  plus default render options (layout, pad, title-pills). Apply with
+  `render.py --preset <name>` (any explicit flag still wins); `--list-presets` shows
+  them. Presets: `default`, `neutral-grey`, `terrastruct`, `aubergine`, `origami`,
+  `c4`, `dark`, `auto-dark`, `sketch`. Add your own by editing the JSON.
+- **Shared style partial** — `assets/styles.d2` sets the elk layout default and
+  reusable `classes` (titled-box `group`/`subnet`; cloud `aws`/`azure`/`gcp` brand
+  boundaries; `service`/`datastore`/`queue`/`authz`). Import it so every diagram
+  shares one look:
+  ```d2
+  ...@../assets/styles
+  cloud: AWS Cloud {class: aws; web: Web {class: service}}
+  ```
+  See `examples/aws-arch.d2`, which imports it.
+- **Custom palette** — d2 can't load a brand-new theme file, but you can recolor any
+  built-in theme's palette slots in your own vars (these are in-file, not a preset):
+  ```d2
+  vars: {d2-config: {theme-overrides: {B1: "#0B5FFF"; B2: "#2E7D32"}}}
+  ```
 
 ## Best practices
 

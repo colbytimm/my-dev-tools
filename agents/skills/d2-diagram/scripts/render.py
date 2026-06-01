@@ -28,6 +28,7 @@ Requires the `d2` CLI on PATH:
 """
 
 import argparse
+import json
 import os
 import re
 import shutil
@@ -38,6 +39,31 @@ from pathlib import Path
 # title_pills lives alongside this script.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import title_pills  # noqa: E402
+
+PRESETS_PATH = Path(__file__).resolve().parent.parent / "assets" / "themes.json"
+
+
+def load_presets():
+    try:
+        return json.loads(PRESETS_PATH.read_text(encoding="utf-8")).get("presets", {})
+    except (OSError, ValueError):
+        return {}
+
+
+def apply_preset(args, name):
+    """Fill unset render options from a named preset (explicit CLI flags win)."""
+    presets = load_presets()
+    if name not in presets:
+        sys.exit(
+            f"unknown preset '{name}'. Available: {', '.join(sorted(presets)) or '(none)'}"
+        )
+    p = presets[name]
+    for opt in ("theme", "dark_theme", "layout", "pad", "elk_node_spacing"):
+        if getattr(args, opt, None) is None and opt in p:
+            setattr(args, opt, p[opt])
+    for flag in ("sketch", "title_pills"):
+        if p.get(flag):
+            setattr(args, flag, True)
 
 INSTALL_HINT = (
     "d2 CLI not found on PATH. Install it with one of:\n"
@@ -215,8 +241,16 @@ def main():
     parser = argparse.ArgumentParser(
         description="Render/validate/format d2 diagrams and embed them in markdown."
     )
-    parser.add_argument("input", type=Path, help="path to the .d2 source file")
+    parser.add_argument("input", type=Path, nargs="?", help="path to the .d2 source file")
     parser.add_argument("-o", "--output", help="output path (default: derived from input)")
+    parser.add_argument(
+        "--preset", help="named render preset from assets/themes.json (e.g. default, "
+        "aubergine, c4, dark, sketch). Sets theme/layout/pad/title-pills; explicit "
+        "flags still win. Use --list-presets to see them.",
+    )
+    parser.add_argument(
+        "--list-presets", action="store_true", help="list available presets and exit",
+    )
     parser.add_argument(
         "--format", choices=["svg", "png", "pdf"], default="svg",
         help="output format (default: svg). png/pdf need a headless Chromium.",
@@ -262,8 +296,19 @@ def main():
     )
     args = parser.parse_args()
 
+    if args.list_presets:
+        presets = load_presets()
+        for name in sorted(presets):
+            print(f"{name:14} {json.dumps(presets[name])}")
+        return
+
+    if args.preset:
+        apply_preset(args, args.preset)
+
     require_d2()
 
+    if args.input is None:
+        sys.exit("an input .d2 file is required (or use --list-presets).")
     if not args.input.exists():
         sys.exit(f"input file not found: {args.input}")
 
@@ -274,8 +319,13 @@ def main():
         validate(args.input)
         return
 
+    # Title pills are an SVG-only post-process. If a preset turned them on but a
+    # raster format was requested, skip them quietly rather than failing.
     if args.title_pills and args.format != "svg":
-        sys.exit("--title-pills only applies to SVG output; use --format svg.")
+        if args.preset:
+            args.title_pills = False
+        else:
+            sys.exit("--title-pills only applies to SVG output; use --format svg.")
 
     out = render(args.input, args)
 

@@ -1,0 +1,14 @@
+{
+  "_comment": "Named render presets for scripts/render.py --preset <name>. Each preset maps to render.py options; CLI flags you pass explicitly always win. 'theme'/'dark_theme' are d2 built-in theme IDs (see `d2 themes`). To recolor a theme, add theme-overrides in your .d2 vars (presets can't set those, they're an in-file d2 feature).",
+  "presets": {
+    "default": {"theme": 0, "layout": "elk", "pad": 40, "title_pills": true},
+    "neutral-grey": {"theme": 1, "layout": "elk", "pad": 40, "title_pills": true},
+    "terrastruct": {"theme": 3, "layout": "elk", "pad": 40, "title_pills": true},
+    "aubergine": {"theme": 7, "layout": "elk", "pad": 40, "title_pills": true},
+    "origami": {"theme": 302, "layout": "elk", "pad": 40, "title_pills": true},
+    "c4": {"theme": 303, "layout": "elk", "pad": 40, "title_pills": true},
+    "dark": {"theme": 200, "dark_theme": 200, "layout": "elk", "pad": 40, "title_pills": true},
+    "auto-dark": {"theme": 1, "dark_theme": 200, "layout": "elk", "pad": 40, "title_pills": true},
+    "sketch": {"theme": 0, "sketch": true, "layout": "elk", "pad": 40, "title_pills": true}
+  }
+}

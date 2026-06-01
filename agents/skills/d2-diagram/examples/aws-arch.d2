@@ -3,15 +3,12 @@
 # Icon URLs were resolved with `python scripts/icons.py search <term> --provider aws`
 # and are pasted verbatim. Use one provider's icon set per diagram.
 #
-# Uses the elk layout for clean routing; icons sit on leaf nodes while the AWS
-# Cloud / region containers are labeled in text only (see SKILL.md "Readability").
+# Imports the shared style partial (elk layout + reusable classes) and uses the
+# `aws`/`group` titled-box classes. Render with:
+#   python scripts/render.py aws-arch.d2 --preset default --title-pills
+# Add --no-bundle when the icon host is unreachable (icons load at view time).
 
-vars: {
-  d2-config: {
-    layout-engine: elk
-    pad: 40
-  }
-}
+...@../assets/styles
 
 title: Highly-Available Web App on AWS {
   near: top-center
@@ -29,23 +26,18 @@ cdn: CloudFront {
   icon: https://icons.terrastruct.com/aws%2FNetworking%20&%20Content%20Delivery%2FAmazon-CloudFront.svg
 }
 
-# Grouping containers are "titled boxes": filled + bordered with a bold top-left
-# header, which d2 keeps clear of the edges routed into their children.
 aws: AWS Cloud {
-  label.near: top-left
-  style: {fill: "#FFF7EC"; stroke: "#FF9900"; stroke-width: 2; bold: true; font-color: "#8A5A00"}
+  class: aws
 
   region: us-east-1 {
-    label.near: top-left
-    style: {fill: "#F2F4F7"; stroke: "#5B6B8C"; stroke-width: 2; bold: true; font-color: "#33415C"}
+    class: group
 
     lb: Application Load Balancer {
       icon: https://icons.terrastruct.com/aws%2FNetworking%20&%20Content%20Delivery%2FElastic-Load-Balancing.svg
     }
 
     web: Web Tier (Auto Scaling) {
-      label.near: top-left
-      style: {fill: "#E8EDF7"; stroke: "#5B6B8C"; stroke-width: 2; bold: true; font-color: "#33415C"}
+      class: group
       ec2a: EC2 {icon: https://icons.terrastruct.com/aws%2FCompute%2F_Instance%2FAmazon-EC2_Instance_light-bg.svg}
       ec2b: EC2 {icon: https://icons.terrastruct.com/aws%2FCompute%2F_Instance%2FAmazon-EC2_Instance_light-bg.svg}
     }
