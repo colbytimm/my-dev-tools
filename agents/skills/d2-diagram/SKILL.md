@@ -157,6 +157,24 @@ these rules when authoring (they are baked into the examples):
   container anchors both its label and its icon at the top, so on tight layouts
   they crowd each other. Put icons on **leaf** nodes; label grouping containers
   (VPCs, subnets, tiers) with text only.
+- **Lift grouping-container labels out of the box.** A container label defaults to
+  the top edge — exactly where ELK routes edges into the box, so lines draw over it.
+  Set `label.near: outside-top-left` (or `outside-top-center`) so the label sits
+  *above* the border, clear of every routed edge. This works in a reusable `class`:
+
+  ```d2
+  classes: {
+    subnet: {
+      label.near: outside-top-left
+      style: {fill: "#F3F2F1"; stroke: "#8A8886"; stroke-dash: 3}
+    }
+  }
+  vnet: VNet 10.0.0.0/16 {
+    snet_app: snet-app 10.0.3.0/24 {class: subnet; api: API; worker: Worker}
+  }
+  ```
+
+  (Don't shrink these labels with a tiny `font-size`; the readable default is fine.)
 - **One short label per icon'd node.** A node with an icon *and* a long multi-line
   label squeezes the icon — prefer a concise name plus the icon.
 - **Give the diagram air** with `--pad 40` (or more) and split very large systems

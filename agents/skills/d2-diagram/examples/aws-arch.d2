@@ -29,11 +29,14 @@ cdn: CloudFront {
   icon: https://icons.terrastruct.com/aws%2FNetworking%20&%20Content%20Delivery%2FAmazon-CloudFront.svg
 }
 
+# Grouping containers put their label outside-top-left so routed edges don't cross it.
 aws: AWS Cloud {
+  label.near: outside-top-left
   style.stroke: "#FF9900"
   style.stroke-width: 2
 
   region: us-east-1 {
+    label.near: outside-top-left
     style.fill: "#F5F5F5"
 
     lb: Application Load Balancer {
@@ -41,6 +44,7 @@ aws: AWS Cloud {
     }
 
     web: Web Tier (Auto Scaling) {
+      label.near: outside-top-left
       ec2a: EC2 {icon: https://icons.terrastruct.com/aws%2FCompute%2F_Instance%2FAmazon-EC2_Instance_light-bg.svg}
       ec2b: EC2 {icon: https://icons.terrastruct.com/aws%2FCompute%2F_Instance%2FAmazon-EC2_Instance_light-bg.svg}
     }

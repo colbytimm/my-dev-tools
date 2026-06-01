@@ -21,8 +21,10 @@ title: Order Service — 3-Tier Architecture {
   style: {font-size: 26; bold: true}
 }
 
-# Reusable styles so similar components look the same.
+# Reusable styles so similar components look the same. The `tier` class lifts the
+# container label outside the box so routed edges never draw over it.
 classes: {
+  tier: {label.near: outside-top-left}
   edge: {style: {fill: "#E8F0FE"; stroke: "#4285F4"}}
   service: {style: {fill: "#E6F4EA"; stroke: "#34A853"}}
   datastore: {shape: cylinder; style: {fill: "#FCE8E6"; stroke: "#EA4335"}}
@@ -32,16 +34,19 @@ classes: {
 user: Customer {shape: person}
 
 client: Client Tier {
+  class: tier
   web: Web App {shape: page}
   mobile: Mobile App {shape: page}
 }
 
 edge: Edge {
+  class: tier
   gateway: API Gateway {class: edge; shape: hexagon}
   auth: Auth Service {class: edge}
 }
 
 services: Application Tier {
+  class: tier
   orders: Order Service {class: service}
   payments: Payment Service {class: service}
   notifications: Notification Service {class: service}
@@ -49,6 +54,7 @@ services: Application Tier {
 }
 
 data: Data Tier {
+  class: tier
   ordersdb: Orders DB {
     shape: sql_table
     id: uuid {constraint: primary_key}
