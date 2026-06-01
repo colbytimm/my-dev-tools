@@ -1,0 +1,59 @@
+# User-journey / flow diagram: buying a product on a generic e-commerce site.
+# Demonstrates start/end ovals, process steps, decision diamonds, retry loops,
+# reusable classes, and sketch style. Short labels keep the branches readable.
+
+vars: {
+  d2-config: {
+    layout-engine: dagre
+    sketch: true
+  }
+}
+
+direction: down
+
+title: ShopWave — Buyer Journey {
+  near: top-center
+  shape: text
+  style: {font-size: 28; bold: true}
+}
+
+classes: {
+  startend: {shape: oval; style: {fill: "#D8F3DC"; stroke: "#2D6A4F"; bold: true}}
+  step: {style: {fill: "#E7F0FD"; stroke: "#1B4965"}}
+  decision: {shape: diamond; style: {fill: "#FFF3CD"; stroke: "#9C6B00"}}
+}
+
+start: Visit ShopWave {class: startend}
+browse: Search / browse {class: step}
+view: View product {class: step}
+buy_q: Want it? {class: decision}
+keep: Keep browsing {class: step}
+cart: Add to cart {class: step}
+more_q: Shop more? {class: decision}
+checkout: Checkout {class: step}
+acct_q: Signed in? {class: decision}
+login: Sign in / guest {class: step}
+ship: Shipping address {class: step}
+pay: Payment {class: step}
+pay_q: Approved? {class: decision}
+retry: Fix payment {class: step}
+confirm: Order confirmed {class: step}
+track: Track delivery {class: step}
+done: Delivered {class: startend}
+
+start -> browse -> view -> buy_q
+buy_q -> keep: no
+keep -> browse
+buy_q -> cart: yes
+cart -> more_q
+more_q -> browse: yes
+more_q -> checkout: no
+checkout -> acct_q
+acct_q -> login: no
+acct_q -> ship: yes
+login -> ship
+ship -> pay -> pay_q
+pay_q -> retry: declined
+retry -> pay
+pay_q -> confirm: approved
+confirm -> track -> done
