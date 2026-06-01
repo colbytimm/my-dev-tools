@@ -24,27 +24,29 @@ vars: {
 
 classes: {
   # --- Grouping containers (titled boxes; use with --title-pills) ---
+  # An explicit font-size keeps every group title the same size; without it d2
+  # auto-scales container labels by nesting depth (outer bigger than inner).
   group: {
     label.near: top-left
-    style: {fill: "#EDEFF5"; stroke: "#5B6B8C"; stroke-width: 2; bold: true; font-color: "#33415C"}
+    style: {fill: "#EDEFF5"; stroke: "#5B6B8C"; stroke-width: 2; bold: true; font-color: "#33415C"; font-size: 20}
   }
   subnet: {
     label.near: top-left
-    style: {fill: "#EDEFF5"; stroke: "#5B6B8C"; stroke-width: 2; stroke-dash: 3; bold: true; font-color: "#33415C"}
+    style: {fill: "#EDEFF5"; stroke: "#5B6B8C"; stroke-width: 2; stroke-dash: 3; bold: true; font-color: "#33415C"; font-size: 20}
   }
 
   # --- Cloud provider boundaries (brand colors) ---
   aws: {
     label.near: top-left
-    style: {fill: "#FFF7EC"; stroke: "#FF9900"; stroke-width: 2; bold: true; font-color: "#8A5A00"}
+    style: {fill: "#FFF7EC"; stroke: "#FF9900"; stroke-width: 2; bold: true; font-color: "#8A5A00"; font-size: 20}
   }
   azure: {
     label.near: top-left
-    style: {fill: "#EAF1FB"; stroke: "#0078D4"; stroke-width: 2; bold: true; font-color: "#10437A"}
+    style: {fill: "#EAF1FB"; stroke: "#0078D4"; stroke-width: 2; bold: true; font-color: "#10437A"; font-size: 20}
   }
   gcp: {
     label.near: top-left
-    style: {fill: "#E9F0FE"; stroke: "#1A73E8"; stroke-width: 2; bold: true; font-color: "#174EA6"}
+    style: {fill: "#E9F0FE"; stroke: "#1A73E8"; stroke-width: 2; bold: true; font-color: "#174EA6"; font-size: 20}
   }
 
   # --- Component roles ---
