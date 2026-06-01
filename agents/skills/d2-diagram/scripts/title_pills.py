@@ -44,7 +44,7 @@ def attr(pattern, text, default=None):
     return m.group(1) if m else default
 
 
-def add_pills(svg, fill=None, stroke=None, radius=4, padx=11, pady=5):
+def add_pills(svg, fill=None, stroke=None, radius=4, padx=7, pady=2, inset=7):
     # Real shape groups, in document order: (key, start, class_attr).
     shapes = []
     for m in GROUP.finditer(svg):
@@ -56,6 +56,7 @@ def add_pills(svg, fill=None, stroke=None, radius=4, padx=11, pady=5):
     def is_container(k):
         return any(o != k and o.startswith(k + ".") for o in keys)
 
+    removals = []
     pills = []
     for i, (key, start, _) in enumerate(shapes):
         if not is_container(key):
@@ -69,35 +70,58 @@ def add_pills(svg, fill=None, stroke=None, radius=4, padx=11, pady=5):
             continue
         tel = tm.group(0)
         try:
-            x = float(attr(r'\bx="([-\d.]+)"', tel))
-            y = float(attr(r'\by="([-\d.]+)"', tel))
+            tx = float(attr(r'\bx="([-\d.]+)"', tel))
         except (TypeError, ValueError):
             continue
         fs = float(attr(r"font-size:(\d+(?:\.\d+)?)", tel, "16"))
         anchor = attr(r"text-anchor:(\w+)", tel, "start")
         label = re.sub(r"<[^>]+>", "", tel)
 
-        # Pill colors: explicit override, else the container's own rect fill/stroke.
+        # The container's own box rect (first rect before the label) anchors the pill.
         rect_tag = span[: tm.start()]
+        try:
+            bx = float(attr(r'<rect[^>]*\bx="([-\d.]+)"', rect_tag))
+            by = float(attr(r'<rect[^>]*\by="([-\d.]+)"', rect_tag))
+            bw = float(attr(r'<rect[^>]*\bwidth="([-\d.]+)"', rect_tag))
+        except (TypeError, ValueError):
+            continue  # need the box to place the pill inside it
         pill_fill = fill or attr(r'<rect[^>]*\bfill="([^"]+)"', rect_tag) or "#FFFFFF"
         pill_stroke = stroke or attr(r'<rect[^>]*\bstroke="([^"]+)"', rect_tag) or "#888888"
 
-        w = len(label) * fs * 0.58 + 2 * padx
-        h = fs * 1.25 + 2 * pady
+        w = len(label) * fs * 0.55 + 2 * padx
+        h = fs + 2 * pady
+        # Sit the pill just inside the box's top edge.
+        py = by + inset
+        # Honour the label's horizontal anchor, then clamp fully inside the box.
         if anchor == "middle":
-            rx = x - w / 2
+            px = tx - w / 2
         elif anchor == "end":
-            rx = x - w + padx
+            px = tx - w
         else:
-            rx = x - padx
-        ry = y - fs * 0.82 - pady
+            px = bx + inset
+        px = max(bx + inset, min(px, bx + bw - w - inset))
+
+        # Re-emit the title text vertically centred in the pill.
+        new_y = py + h / 2 + fs * 0.34
+        if anchor == "middle":
+            new_x = px + w / 2
+        elif anchor == "end":
+            new_x = px + w - padx
+        else:
+            new_x = px + padx
+        new_text = re.sub(r'\bx="[-\d.]+"', f'x="{new_x:.1f}"', tel, count=1)
+        new_text = re.sub(r'\by="[-\d.]+"', f'y="{new_y:.1f}"', new_text, count=1)
 
         rect = (
-            f'<rect x="{rx:.1f}" y="{ry:.1f}" width="{w:.1f}" height="{h:.1f}" '
+            f'<rect x="{px:.1f}" y="{py:.1f}" width="{w:.1f}" height="{h:.1f}" '
             f'rx="{radius}" fill="{pill_fill}" stroke="{pill_stroke}" stroke-width="1.5"/>'
         )
-        pills.append(rect + tel)
+        removals.append(tel)
+        pills.append(rect + new_text)
 
+    # Remove the original (un-masked) titles, then draw the pills on top.
+    for tel in removals:
+        svg = svg.replace(tel, "", 1)
     if pills:
         svg = svg.replace("</svg>", "".join(pills) + "</svg>", 1)
     return svg, len(pills)
