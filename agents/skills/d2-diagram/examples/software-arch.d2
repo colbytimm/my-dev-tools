@@ -3,10 +3,12 @@
 # Demonstrates containers (tiers), shape types, reusable classes for consistent
 # styling, cross-container connections, and a sql_table. No icons here -- this is
 # the pattern to reach for when you want a clean architecture diagram without
-# tying it to one cloud vendor. Render with: python scripts/render.py software-arch.d2
+# tying it to one cloud vendor. The committed SVG was rendered with:
+#   python scripts/render.py software-arch.d2 --title-pills
 #
-# Uses the elk layout for clean, non-overlapping edge routing, and keeps edge
-# labels short (see SKILL.md "Readability").
+# Uses the elk layout for clean, non-overlapping edge routing, keeps edge labels
+# short, and gives each tier a titled box; --title-pills then draws a masking pill
+# behind each tier title so no routed line can cross it (see SKILL.md "Readability").
 
 vars: {
   d2-config: {

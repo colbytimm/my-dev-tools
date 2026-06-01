@@ -12,10 +12,12 @@ description: Author software- and cloud-architecture diagrams as code with d2
 # d2 Diagram
 
 Generate architecture diagrams as text with [d2](https://d2lang.com), then render
-and embed them. Two scripts support the workflow:
+and embed them. Three scripts support the workflow:
 
 - `scripts/icons.py` — resolve exact `icon:` URLs for AWS/GCP/Azure services.
 - `scripts/render.py` — render/validate/format `.d2` files and embed them in markdown.
+- `scripts/title_pills.py` — post-process an SVG to draw masking pills behind group
+  titles (also wired into `render.py --title-pills`).
 
 ## Workflow
 
@@ -120,6 +122,9 @@ python scripts/render.py examples/software-arch.d2
 python scripts/render.py examples/aws-arch.d2 -o out.svg \
   --theme 1 --layout elk --elk-node-spacing 100 --pad 40
 
+# SVG with masking pills behind every group title (lines can't cross a title)
+python scripts/render.py examples/software-arch.d2 --title-pills
+
 # Validate or autoformat before committing
 python scripts/render.py examples/aws-arch.d2 --validate
 python scripts/render.py examples/aws-arch.d2 --fmt
@@ -183,6 +188,14 @@ these rules when authoring (they are baked into the examples):
 
   Either way, don't shrink these labels with a tiny `font-size`; the readable
   default is fine.
+- **Title pills (SVG, strongest guarantee).** d2 draws connections *after* shape
+  labels, so in a dense diagram a routed line can still clip a group title. Pass
+  `render.py --title-pills` (SVG output only): it post-processes the SVG to draw an
+  opaque, bordered pill behind every group/container title and re-renders it *on top*
+  of the edges, so no line can show through. Pills inherit each container's own
+  fill/border (override with `--pill-fill` / `--pill-stroke`). `scripts/title_pills.py`
+  can also run standalone on any d2 SVG. This is the most robust way to satisfy
+  "lines must never cross a group title."
 - **One short label per icon'd node.** A node with an icon *and* a long multi-line
   label squeezes the icon — prefer a concise name plus the icon.
 - **Give the diagram air** with `--pad 40` (or more) and split very large systems

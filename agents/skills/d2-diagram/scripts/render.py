@@ -35,6 +35,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+# title_pills lives alongside this script.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import title_pills  # noqa: E402
+
 INSTALL_HINT = (
     "d2 CLI not found on PATH. Install it with one of:\n"
     "  curl -fsSL https://d2lang.com/install.sh | sh -s --\n"
@@ -241,6 +245,14 @@ def main():
         help="keep icons as remote URL refs instead of inlining them (use when "
              "the icon host is unreachable at render time; icons load at view time)",
     )
+    parser.add_argument(
+        "--title-pills", action="store_true",
+        help="SVG only: draw an opaque, bordered pill behind each group/container "
+             "title and render it on top of the edges, so routed lines can't draw "
+             "over the title. Pills match each container's own fill/border by default.",
+    )
+    parser.add_argument("--pill-fill", help="with --title-pills: override pill fill color")
+    parser.add_argument("--pill-stroke", help="with --title-pills: override pill border color")
     parser.add_argument("--validate", action="store_true", help="validate only, don't render")
     parser.add_argument("--fmt", action="store_true", help="autoformat the .d2 file in place")
     parser.add_argument("--md", type=Path, help="markdown file to embed the rendered image into")
@@ -262,7 +274,19 @@ def main():
         validate(args.input)
         return
 
+    if args.title_pills and args.format != "svg":
+        sys.exit("--title-pills only applies to SVG output; use --format svg.")
+
     out = render(args.input, args)
+
+    # Post-process the SVG to mask edges behind group titles.
+    if args.title_pills and out.suffix == ".svg":
+        svg = out.read_text(encoding="utf-8")
+        svg, n = title_pills.add_pills(
+            svg, fill=args.pill_fill, stroke=args.pill_stroke
+        )
+        out.write_text(svg, encoding="utf-8")
+        print(f"Added {n} title pill(s) to {out}")
 
     if args.md:
         embed_in_markdown(args.md, out, args.md_marker)
