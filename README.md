@@ -6,7 +6,16 @@ Tooling for AI coding agents.
 
 ### Skills
 
-Portable [agent skills](https://agents.md) — each is a self-contained folder with a `SKILL.md` and supporting scripts that an agent can discover and run.
+Portable [agent skills](https://agentskills.io) — each is a self-contained folder with a `SKILL.md` and supporting scripts that an agent can discover and run.
+
+Install any skill with the [`gh skill`](https://cli.github.com/manual/gh_skill) command:
+
+```sh
+gh skill install colbytimm/my-dev-tools <skill-name>
+
+# e.g.
+gh skill install colbytimm/my-dev-tools d2-diagram
+```
 
 #### Images & screenshots
 

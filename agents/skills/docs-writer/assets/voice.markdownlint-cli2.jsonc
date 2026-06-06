@@ -1,0 +1,77 @@
+{
+  "customRules": [
+    "markdownlint-rule-search-replace",
+    "markdownlint-rule-relative-links",
+    "./stateful-rules.cjs"
+  ],
+  "config": {
+    "default": false,
+    "relative-links": true,
+    "search-replace": {
+      "rules": [
+        {
+          "name": "banned-marketing-words",
+          "message": "Marketing adjective; replace with the fact that justifies it",
+          "searchPattern": "/\\b(blazingly|blazing-fast|cutting-edge|state-of-the-art|game-changing|next-generation|enterprise-grade|supercharged|production-ready|world-class|best-in-class)\\b/gi",
+          "skipCode": true
+        },
+        {
+          "name": "banned-ai-words",
+          "message": "AI vocabulary; use a plain verb or cut",
+          "searchPattern": "/\\b(delve|delves|delving|leverages?|leveraging|utiliz(e|es|ing)|streamlin(e|es|ing)|empower(s|ing)?|foster(s|ing)?|harness(es|ing)?|elevates?|unlocks?|effortless(ly)?|seamless(ly)?|robust|holistic|pivotal|crucial|tapestry|testament|intricate)\\b/gi",
+          "skipCode": true
+        },
+        {
+          "name": "soft-words",
+          "message": "Quality claim; keep only if evidence is nearby",
+          "searchPattern": "/\\b(powerful|comprehensive|elegant|intuitive|lightweight|flexible|modern|ecosystem|landscape|journey|vital|enhances?|enhanced)\\b/gi",
+          "skipCode": true
+        },
+        {
+          "name": "condescension",
+          "message": "Condescension word; cut it or explain the hard part",
+          "searchPattern": "/\\b(simply|just|easily|easy|obviously|straightforward|trivially)\\b/gi",
+          "skipCode": true
+        },
+        {
+          "name": "em-dash",
+          "message": "Em dash; use a comma, parentheses, or a period",
+          "searchPattern": "/—/g",
+          "skipCode": true
+        },
+        {
+          "name": "summary-opener",
+          "message": "Compulsive summary opener; end when the information ends",
+          "searchPattern": "/^(In conclusion|In summary|To summarize|Overall),/gmi",
+          "skipCode": true
+        },
+        {
+          "name": "negative-parallelism",
+          "message": "'not just X, it's Y' construction; say what it is",
+          "searchPattern": "/\\b(is|it's|its)\\s+not\\s+(just|merely|simply)\\b/gi",
+          "skipCode": true
+        },
+        {
+          "name": "emoji-in-heading",
+          "message": "Emoji in heading; remove it",
+          "searchPattern": "/^#{1,6}\\s.*[\\u2600-\\u27BF\\u{1F000}-\\u{1FAFF}]/gmu",
+          "skipCode": true
+        },
+        {
+          "name": "decorative-emoji",
+          "message": "Decorative emoji; allowed only as semantic markers (checkmarks in a support table)",
+          "searchPattern": "/[\\u{1F300}-\\u{1F9FF}\\u2728\\u2B50\\u{1F680}]/gu",
+          "skipCode": true
+        },
+        {
+          "name": "future-tense-step",
+          "message": "'will' in a procedure step; use present tense",
+          "searchPattern": "/^\\d+\\.\\s.*\\bwill\\b/gmi",
+          "skipCode": true
+        }
+      ]
+    },
+    "voice-term-bullets": true,
+    "voice-rule-of-threes": true
+  }
+}

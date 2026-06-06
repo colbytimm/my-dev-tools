@@ -50,6 +50,7 @@ Strongly encouraged when real ones exist; this is the section that makes maintai
 
 ## Pointers (bottom of file)
 
+- Documentation: when the repo has a `docs/` folder or docs site, link it near the top of the README (beside the badges or in the opening paragraph), not only at the bottom. Use the deployed site URL when one exists; fall back to the relative `docs/` path otherwise. Deep-link specific pages from the sections they extend (Usage -> the relevant guide, Configuration -> the reference page).
 - Contributing: one line linking to `CONTRIBUTING.md` (or "Issues and PRs welcome" if no file exists - and suggest creating one only if the user asks).
 - License: one line, e.g. "MIT - see [LICENSE](LICENSE)." Match the actual license file; if none exists, flag it as a TODO rather than asserting a license.
 - Acknowledgments/credits only when there's a real upstream project or prior art to credit.

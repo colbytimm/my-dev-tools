@@ -18,6 +18,7 @@ A README written from the file tree alone will be generic. Gather real facts:
 - Read the manifest (`package.json`, `Cargo.toml`, `pyproject.toml`, `go.mod`, `.csproj`, etc.) for the actual name, description, version, license, and dependencies.
 - Read the entry point and main modules enough to describe what the project actually does and how it's invoked.
 - Read existing docs: current README, `CONTRIBUTING.md`, `docs/`, `CHANGELOG.md`, comments in config files. Don't duplicate them; link to them.
+- Detect a docs presence specifically: a `docs/` folder, a docs-site config (`mkdocs.yml`, `docusaurus.config.js`, `conf.py`, `astro.config.mjs`), or a documentation URL in the manifest (`homepage`, `documentation` fields). When docs exist, the README must link to them - prominently near the top (a "Documentation" link beside the badges or in the first paragraph), and again from any section the docs cover in more depth (Usage links to the relevant guide, Configuration links to the reference). A repo with docs that the README never mentions is a structural bug; fix it in both create and update mode.
 - Run `--help` or look at CLI/arg definitions to get real commands and flags.
 - Note the install path that actually works (is it published to npm/PyPI/crates.io, or clone-and-build only?). Never invent a `pip install x` for an unpublished package.
 
@@ -56,13 +57,17 @@ Write the draft following `references/voice.md`. Then do a dedicated revision pa
 
 ### 5. Final mechanical checks
 
-Run the linter and fix everything it reports:
+One command runs everything:
 
 ```sh
-python scripts/lint_readme.py README.md
+node scripts/lint_voice.mjs README.md
 ```
 
-It enforces the voice rules (banned vocabulary, emoji placement, em dashes, summary openers, term-bullet walls, negative parallelism) and markdown mechanics (single h1, no heading-level jumps, language tags on code fences, resolvable relative links). Errors must be fixed; treat warnings as fix-by-default, overridable only with a reason. Use `--strict` to fail on warnings too. Then verify by hand what the linter can't:
+It orchestrates three passes. Mechanics: markdownlint-cli2, using the repo's own `.markdownlint*` config when one exists (never override a maintainer's rules) and the bundled `assets/markdownlint.json` otherwise. Voice: markdownlint-cli2 again with `assets/voice.markdownlint-cli2.jsonc`, where the banned vocabulary, emoji policy, em dashes, summary openers, and dead-link checks live as standard markdownlint custom rules. All checks, including the stateful term-bullet and rule-of-threes ones, are markdownlint rules (the stateful pair live in `assets/stateful-rules.cjs`). Fix all errors; treat warnings (soft words, condescension, negative parallelism) as fix-by-default with override only for a reason. `--strict` fails on warnings; `--voice-only` skips mechanics when the repo's CI already runs markdownlint.
+
+The voice config is plain markdownlint configuration, so a repo can adopt it directly in CI without this script: commit the jsonc plus `stateful-rules.cjs`, and add `markdownlint-rule-search-replace` and `markdownlint-rule-relative-links` as devDependencies. Offer that only if the user wants it. If Node/npx is unavailable, skip the script and cover markdownlint's core concerns by hand (heading increments, fence language tags, one h1).
+
+Then verify what no linter can:
 
 - Commands actually run in order (a fresh reader executes top to bottom).
 - GFM only. Use GitHub admonitions (`> [!NOTE]`, `> [!WARNING]`) sparingly - one or two per README, where the reader would otherwise get burned.
