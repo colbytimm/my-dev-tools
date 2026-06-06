@@ -8,13 +8,54 @@ Tooling for AI coding agents.
 
 Portable [agent skills](https://agentskills.io). Each is a self-contained folder with a `SKILL.md` and supporting scripts that an agent can discover and run.
 
-Install any skill with the [`gh skill`](https://cli.github.com/manual/gh_skill) command:
+#### Installing
+
+Install any skill with the [`gh skill`](https://cli.github.com/manual/gh_skill) command. Requires [GitHub CLI](https://cli.github.com) 2.90.0 or later (`gh skill` is in public preview).
+
+Preview a skill before installing it:
 
 ```sh
-gh skill install colbytimm/my-dev-tools <skill-name>
+gh skill preview colbytimm/my-dev-tools d2-diagram
+```
 
-# e.g.
-gh skill install colbytimm/my-dev-tools d2-diagram
+##### GitHub Copilot, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, Warp, Antigravity
+
+At project scope these agents all read the shared `.agents/skills/` directory, so a single install covers all of them for the current repo:
+
+```sh
+# Project scope (this repo only) - installs to .agents/skills/
+gh skill install colbytimm/my-dev-tools d2-diagram --agent github-copilot --scope project
+
+# User scope (all repos, Copilot) - installs to ~/.copilot/skills/
+gh skill install colbytimm/my-dev-tools d2-diagram --agent github-copilot --scope user
+```
+
+User-scope directories are per-agent. For a non-Copilot agent at user scope, pass its own `--agent` slug; running `gh skill install colbytimm/my-dev-tools` with no skill name opens an interactive picker that lists every supported agent.
+
+##### Claude Code
+
+Claude Code reads its own directories (`.claude/skills/` at project scope, `~/.claude/skills/` at user scope):
+
+```sh
+# Project scope (this repo only)
+gh skill install colbytimm/my-dev-tools d2-diagram --agent claude-code --scope project
+
+# User scope (all repos)
+gh skill install colbytimm/my-dev-tools d2-diagram --agent claude-code --scope user
+```
+
+##### Pinning a version
+
+Unpinned installs resolve to the latest tagged release, falling back to the default branch when no release exists (this repo has no tagged release yet). Pin to a git tag or commit SHA to stay put:
+
+```sh
+gh skill install colbytimm/my-dev-tools d2-diagram --pin <tag-or-commit-sha>
+```
+
+Pinned skills are skipped by `gh skill update`. To check for upstream changes across everything installed:
+
+```sh
+gh skill update --dry-run
 ```
 
 #### Images & screenshots
