@@ -1,0 +1,28 @@
+name: Validate skills
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Upgrade gh if it lacks the preview skill command
+        run: |
+          if ! gh skill --help >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y gh
+          fi
+          gh --version
+
+      - name: Validate skills (gh skill publish --dry-run)
+        run: gh skill publish --dry-run

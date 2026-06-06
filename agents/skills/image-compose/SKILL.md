@@ -5,6 +5,7 @@ description: Combine multiple images (e.g. web screenshots) into a side-by-side,
   panel and emits a JSON manifest of panel positions. Use when comparing two or
   more captures — before/after upgrades, computed-vs-reference values, A/B states
   — or any time several images need to sit in one frame. Pairs with image-annotate.
+license: MIT
 ---
 
 # Image Compose

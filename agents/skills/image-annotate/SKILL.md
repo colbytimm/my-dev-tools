@@ -6,6 +6,7 @@ description: Draw annotations on an image (boxes, arrows, labeled connectors,
   manifest. Use to mark up screenshots — highlight a field, point at a region,
   link matching values across a comparison, label which page a capture is from,
   or redact sensitive data. Pairs with image-compose.
+license: MIT
 ---
 
 # Image Annotate
