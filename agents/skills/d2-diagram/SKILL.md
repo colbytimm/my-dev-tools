@@ -7,6 +7,7 @@ description: Author software- and cloud-architecture diagrams as code with d2
   or the icon host is unavailable. Use when asked to draw, diagram, or visualize a
   system, service topology, request flow, or cloud architecture — or to add such a
   diagram to docs/a README.
+license: MIT
 ---
 
 # d2 Diagram

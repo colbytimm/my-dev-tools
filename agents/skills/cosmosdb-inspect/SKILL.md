@@ -9,6 +9,7 @@ description: Inspect a live Azure Cosmos DB for NoSQL account (read-only, via th
   Use to review or optimize an existing account, find hot partitions, spot
   over-provisioned or over-indexed containers, and feed a real model into the
   data-modeling workflow. Requires the az CLI and `az login`. NoSQL API only.
+license: MIT
 ---
 
 # Cosmos DB Inspect (for NoSQL)

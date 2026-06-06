@@ -1,6 +1,7 @@
 ---
 name: docs-writer
 description: Write, update, or audit project documentation (docs/ folders, guides, tutorials, how-tos, API references, architecture docs) that matches the quality of the best open source documentation and reads like a maintainer wrote it, not an AI. Use this skill whenever the user asks to document a project, write docs, create a getting-started guide or tutorial, document an API, explain how something works, fix stale docs, or check documentation quality - even if they just say "this needs docs" or "the docs are out of date". For the repo front page specifically, use the readme-writer skill; this skill covers everything past the front door.
+license: MIT
 ---
 
 # Docs Writer

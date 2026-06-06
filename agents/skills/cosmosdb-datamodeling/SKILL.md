@@ -9,6 +9,7 @@ description: Interactive, requirements-driven workflow for designing an Azure
   estimates. Use when modeling a new Cosmos DB NoSQL workload, reviewing an
   existing model, or migrating a relational schema. Ships helper scripts for
   RU/cost estimation and model linting against documented service limits.
+license: MIT
 ---
 
 # Cosmos DB Data Modeling (for NoSQL)

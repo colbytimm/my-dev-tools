@@ -1,6 +1,7 @@
 ---
 name: readme-writer
 description: Create or update README.md files that match the quality of the best open source projects and read like a maintainer wrote them, not an AI. Use this skill whenever the user asks to write, generate, improve, rewrite, review, or update a README, project documentation landing page, or repo front page - even if they just say "document this project", "make this repo presentable", or "my README sucks". Also use it to audit an existing README for AI-sounding writing.
+license: MIT
 ---
 
 # README Writer

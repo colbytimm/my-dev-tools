@@ -70,3 +70,7 @@ Create or update README files that read like a maintainer wrote them. Encodes th
 Write, update, or audit project documentation past the front page: tutorials, how-to guides, references, and explanation pages, each page written as exactly one of those four types. Inventories existing docs, diffs them against the code to catch stale commands and dead links, and proposes a page plan before writing. Adds docs-specific voice checks on top of the shared rules: condescension words, future-tense steps, second person.
 
 **Used together**: `readme-writer` owns the repo front page; `docs-writer` covers everything past it. Both ship the same voice lint config (plain markdownlint rules), so a repo can adopt one setup in CI for all its markdown.
+
+## License
+
+MIT - see [LICENSE](LICENSE).
