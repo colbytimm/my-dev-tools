@@ -1,6 +1,7 @@
 ---
 name: agents-md-writer
-description: Author or improve an AGENTS.md file — the open-standard Markdown config that guides AI coding agents (Codex, Copilot, Cursor, Claude Code, Aider, etc.) in a repo. Use whenever the user wants to create, write, review, trim, or fix an AGENTS.md (or CLAUDE.md/AGENT.md), set up agent instructions for a project or monorepo package, or asks why their existing agent file isn't helping. The discipline is token efficiency: every line must earn its place, because a bloated file measurably degrades agent output — worse than no file at all.
+description: "Author or improve an AGENTS.md file — the open-standard Markdown config that guides AI coding agents (Codex, Copilot, Cursor, Claude Code, Aider, etc.) in a repo. Use whenever the user wants to create, write, review, trim, or fix an AGENTS.md (or CLAUDE.md/AGENT.md), set up agent instructions for a project or monorepo package, or asks why their existing agent file isn't helping. The discipline is token efficiency: every line must earn its place, because a bloated file measurably degrades agent output — worse than no file at all."
+license: MIT
 ---
 
 # Authoring AGENTS.md
