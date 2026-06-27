@@ -130,8 +130,8 @@ export STATUSLINE_CUSTOM_SEGMENTS="AWS_PROFILE:aws:208,KUBECONTEXT:k8s:134"
 
 For **Claude Pro/Max** accounts, the payload carries `rate_limits` for the
 5-hour session window and the 7-day weekly window. The bar shows each as percent
-used with the reset countdown in parens, e.g. `5h 13% used (4h) · wk 9% used
-(3d)`, colored by consumption (green → amber → red as it climbs). Only
+used with the reset countdown in parens, e.g. `5h 13% (4h) · wk 9% (3d)`,
+colored by consumption (green → amber → red as it climbs). Only
 `used_percentage` and `resets_at` are exposed — there is no absolute token
 count — so the value is a percentage.
 

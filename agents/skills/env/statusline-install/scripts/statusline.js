@@ -415,7 +415,7 @@ if (loading) {
       const used = Math.min(100, Math.max(0, Math.round(w.usedPct)));
       const reset = formatReset(w.resetsAt);
       return (
-        `${fg(FG.CTX_LABEL)}${w.label} ${limitColor(used)}${used}% used` +
+        `${fg(FG.CTX_LABEL)}${w.label} ${limitColor(used)}${used}%` +
         (reset ? `${fg(FG.TIME)} (${reset})` : '')
       );
     });
