@@ -76,6 +76,7 @@ const FG = {
   GAUGE_LO: 76, // green (< 50%)
   GAUGE_MID: 178, // yellow/amber (50-80%)
   GAUGE_HI: 196, // red (80%+)
+  GAUGE_TRACK: 240, // empty gauge track (muted gray, solid)
   TIME: 248, // command_execution_time
   ADD: 70, // status ok green
   DEL: 160, // status error red
@@ -160,7 +161,9 @@ function renderGauge(pct) {
     else color = fg(FG.GAUGE_LO);
   }
 
-  return color + '▊'.repeat(filled) + '░'.repeat(empty);
+  const track = useColor ? fg(FG.GAUGE_TRACK) : '';
+  const emptyCell = useColor ? '▊' : '░';
+  return color + '▊'.repeat(filled) + track + emptyCell.repeat(empty);
 }
 
 // ── Read stdin ────────────────────────────────────────────────
