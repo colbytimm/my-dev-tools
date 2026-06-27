@@ -47,6 +47,10 @@ let debug = (env.STATUSLINE_DEBUG ?? 'false') === 'true';
 // terminal known to lack PUA glyph fallback (Apple Terminal, VS Code).
 let powerlineSetting = (env.STATUSLINE_POWERLINE ?? 'auto').toLowerCase();
 
+// Usage-limit segment. rate_limits is present only for Claude Pro/Max, so the
+// segment auto-hides otherwise; this just lets users force it off.
+let showLimits = (env.STATUSLINE_LIMITS ?? 'true') !== 'false';
+
 // ── Parse args ────────────────────────────────────────────────
 
 let adapter = 'auto';
@@ -120,6 +124,23 @@ function formatDuration(ms) {
   const secs = totalSecs % 60;
   const pad = (v) => String(v).padStart(2, '0');
   return `${pad(hours)}:${pad(mins)}:${pad(secs)}`;
+}
+
+function formatReset(epochSec) {
+  const n = num(epochSec);
+  if (n === null) return '';
+  const secs = Math.round(n - Date.now() / 1000);
+  if (secs <= 0) return 'now';
+  if (secs >= 86400) return `${Math.floor(secs / 86400)}d`;
+  if (secs >= 3600) return `${Math.floor(secs / 3600)}h`;
+  return `${Math.floor(secs / 60)}m`;
+}
+
+function limitColor(remaining) {
+  if (!useColor) return '';
+  if (remaining <= 15) return fg(FG.GAUGE_HI);
+  if (remaining <= 40) return fg(FG.GAUGE_MID);
+  return fg(FG.GAUGE_LO);
 }
 
 function renderGauge(pct) {
@@ -305,6 +326,17 @@ switch (adapter) {
     break;
 }
 
+sl.limits = [
+  { label: '5h', window: 'five_hour' },
+  { label: 'wk', window: 'seven_day' },
+]
+  .map((w) => ({
+    label: w.label,
+    usedPct: num(first(`rate_limits.${w.window}.used_percentage`)),
+    resetsAt: first(`rate_limits.${w.window}.resets_at`),
+  }))
+  .filter((w) => w.usedPct !== null);
+
 // ── Resolve git branch from cwd ───────────────────────────────
 
 let gitBranch = '';
@@ -376,6 +408,19 @@ if (loading) {
 
   out += `${fg(FG.SUBSEP)}${SUBSEP}`;
   out += `${fg(FG.TIME)} ${fmtDuration} `;
+
+  if (showLimits && sl.limits.length) {
+    out += `${fg(FG.SUBSEP)}${SUBSEP}`;
+    const parts = sl.limits.map((w) => {
+      const remaining = Math.max(0, Math.round(100 - w.usedPct));
+      const reset = formatReset(w.resetsAt);
+      return (
+        `${fg(FG.CTX_LABEL)}${w.label} ${limitColor(remaining)}${remaining}%` +
+        (reset ? `${fg(FG.TIME)} ${reset}` : '')
+      );
+    });
+    out += ` ${parts.join(`${fg(FG.SUBSEP)} \u00b7 `)} `;
+  }
 
   if (String(sl.linesAdded) !== '0' || String(sl.linesRemoved) !== '0') {
     out += `${fg(FG.SUBSEP)}${SUBSEP}`;

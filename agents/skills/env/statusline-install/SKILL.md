@@ -126,11 +126,27 @@ is set:
 export STATUSLINE_CUSTOM_SEGMENTS="AWS_PROFILE:aws:208,KUBECONTEXT:k8s:134"
 ```
 
+## Usage limits
+
+For **Claude Pro/Max** accounts, the payload carries `rate_limits` for the
+5-hour session window and the 7-day weekly window. The bar shows each as percent
+remaining plus a reset countdown, e.g. `5h 87% 2h · wk 92% 3d`, colored by how
+much is left (green → amber → red). Only `used_percentage` and `resets_at` are
+exposed — there is no absolute token count — so the value is a percentage.
+
+The segment auto-hides when `rate_limits` is absent (non-subscription accounts,
+or before the first response). Disable it with `STATUSLINE_LIMITS=false`.
+
+GitHub Copilot does **not** expose an account token limit or remaining quota in
+its statusline payload (only context-window tokens and a session request
+counter), so a "usage left" segment can't be computed for it from stdin alone.
+
 ## Flags & environment
 
 | Flag / variable                             | Effect                                         |
 | ------------------------------------------- | ---------------------------------------------- |
 | `--adapter <name>`                          | Force `claude-code`, `copilot`, or `generic`   |
+| `STATUSLINE_LIMITS=false`                   | Hide the Claude usage-limit segment (default shown when present) |
 | `--no-color` / `STATUSLINE_USE_COLOR=false` | Plain output with `│` separators, no color     |
 | `--powerline` / `--no-powerline` (`--plain`) | Force powerline glyphs on/off (default auto by `TERM_PROGRAM`) |
 | `STATUSLINE_POWERLINE=auto\|true\|false`    | Same as above via env; `auto` degrades on Apple Terminal / VS Code |
