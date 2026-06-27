@@ -96,7 +96,6 @@ const usePowerline = !useColor
       ? false
       : !NO_PUA_TERMINALS.includes(env.TERM_PROGRAM ?? '');
 
-const SEP = ''; // powerline tail; emitted only when usePowerline
 const SUBSEP = usePowerline ? '' : '│';
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -467,10 +466,6 @@ if (loading) {
   }
 }
 
-if (usePowerline) {
-  out += `${rst()}${fg(BG)}${SEP}${rst()}`;
-} else {
-  out += rst();
-}
+out += rst();
 
 process.stdout.write(out);
