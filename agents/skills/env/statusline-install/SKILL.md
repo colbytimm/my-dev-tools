@@ -156,15 +156,25 @@ STATUSLINE_RED_AT=80     # >= this is red
 
 ### Themes
 
-Colors come from a named 256-color palette. Built-ins: `p10k` (default) and
-`mono`. Select one with `STATUSLINE_THEME=mono`. Add your own by adding a key to
-the `THEMES` object (use the same keys as `p10k`). Override individual colors
-without forking via `STATUSLINE_COLORS` (`key=256-code`, comma-separated):
+Colors come from a named palette. Select one with `STATUSLINE_THEME`. Built-ins:
+
+- `p10k` (default), `mono` — 256-color, work on any terminal.
+- `dracula`, `nord`, `gruvbox`, `tokyonight`, `catppuccin`, `onedark`,
+  `solarized`, `monokai` — truecolor, matched to the real editor palettes
+  (needs a 24-bit-color terminal; most modern ones qualify).
+
+Add your own by adding a key to the `THEMES` object (use the same keys as
+`p10k`). A color value is either a 256-color code (number) or a `#rrggbb` string.
+Override individual colors without forking via `STATUSLINE_COLORS`
+(`key=value`, comma-separated; value is a code or hex):
 
 ```sh
-STATUSLINE_THEME=mono
-STATUSLINE_COLORS="agent=33,gaugeHi=201"
+STATUSLINE_THEME=dracula
+STATUSLINE_COLORS="agent=#ff79c6,gaugeHi=#ff5555"
 ```
+
+The repo's "Statusline preview" CI workflow renders every theme to an SVG
+artifact for visual review.
 
 ### Font
 

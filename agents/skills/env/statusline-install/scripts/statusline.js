@@ -113,6 +113,56 @@ const THEMES = {
     diff: 250,
     subsep: 240,
   },
+
+  // ── Popular editor themes (truecolor; needs a 24-bit terminal) ──
+  dracula: {
+    bg: '#282a36', agent: '#bd93f9', model: '#6272a4', branch: '#50fa7b',
+    branchDirty: '#ffb86c', ctx: '#8be9fd', ctxLabel: '#6272a4', gaugeLo: '#50fa7b',
+    gaugeMid: '#ffb86c', gaugeHi: '#ff5555', track: '#44475a', time: '#6272a4',
+    add: '#50fa7b', del: '#ff5555', diff: '#ff79c6', subsep: '#6272a4',
+  },
+  nord: {
+    bg: '#2e3440', agent: '#88c0d0', model: '#81a1c1', branch: '#a3be8c',
+    branchDirty: '#ebcb8b', ctx: '#88c0d0', ctxLabel: '#81a1c1', gaugeLo: '#a3be8c',
+    gaugeMid: '#ebcb8b', gaugeHi: '#bf616a', track: '#434c5e', time: '#616e88',
+    add: '#a3be8c', del: '#bf616a', diff: '#b48ead', subsep: '#4c566a',
+  },
+  gruvbox: {
+    bg: '#282828', agent: '#fabd2f', model: '#928374', branch: '#b8bb26',
+    branchDirty: '#fe8019', ctx: '#83a598', ctxLabel: '#928374', gaugeLo: '#b8bb26',
+    gaugeMid: '#fabd2f', gaugeHi: '#fb4934', track: '#504945', time: '#928374',
+    add: '#b8bb26', del: '#fb4934', diff: '#d3869b', subsep: '#665c54',
+  },
+  tokyonight: {
+    bg: '#1a1b26', agent: '#7aa2f7', model: '#565f89', branch: '#9ece6a',
+    branchDirty: '#e0af68', ctx: '#7dcfff', ctxLabel: '#565f89', gaugeLo: '#9ece6a',
+    gaugeMid: '#e0af68', gaugeHi: '#f7768e', track: '#414868', time: '#565f89',
+    add: '#9ece6a', del: '#f7768e', diff: '#bb9af7', subsep: '#414868',
+  },
+  catppuccin: {
+    bg: '#1e1e2e', agent: '#cba6f7', model: '#6c7086', branch: '#a6e3a1',
+    branchDirty: '#f9e2af', ctx: '#89b4fa', ctxLabel: '#a6adc8', gaugeLo: '#a6e3a1',
+    gaugeMid: '#fab387', gaugeHi: '#f38ba8', track: '#45475a', time: '#6c7086',
+    add: '#a6e3a1', del: '#f38ba8', diff: '#f5c2e7', subsep: '#585b70',
+  },
+  onedark: {
+    bg: '#282c34', agent: '#61afef', model: '#5c6370', branch: '#98c379',
+    branchDirty: '#e5c07b', ctx: '#56b6c2', ctxLabel: '#5c6370', gaugeLo: '#98c379',
+    gaugeMid: '#d19a66', gaugeHi: '#e06c75', track: '#3e4451', time: '#5c6370',
+    add: '#98c379', del: '#e06c75', diff: '#c678dd', subsep: '#4b5263',
+  },
+  solarized: {
+    bg: '#002b36', agent: '#268bd2', model: '#586e75', branch: '#859900',
+    branchDirty: '#b58900', ctx: '#2aa198', ctxLabel: '#657b83', gaugeLo: '#859900',
+    gaugeMid: '#b58900', gaugeHi: '#dc322f', track: '#073642', time: '#586e75',
+    add: '#859900', del: '#dc322f', diff: '#6c71c4', subsep: '#586e75',
+  },
+  monokai: {
+    bg: '#272822', agent: '#66d9ef', model: '#75715e', branch: '#a6e22e',
+    branchDirty: '#e6db74', ctx: '#66d9ef', ctxLabel: '#75715e', gaugeLo: '#a6e22e',
+    gaugeMid: '#fd971f', gaugeHi: '#f92672', track: '#49483e', time: '#75715e',
+    add: '#a6e22e', del: '#f92672', diff: '#ae81ff', subsep: '#49483e',
+  },
 };
 
 // ── Font ──────────────────────────────────────────────────────
@@ -152,8 +202,8 @@ const C = { ...THEMES.p10k, ...THEMES[themeName] };
 if (env.STATUSLINE_COLORS) {
   for (const pair of env.STATUSLINE_COLORS.split(',')) {
     const [k, v] = pair.split('=').map((s) => (s ?? '').trim());
-    const code = num(v);
-    if (k && code !== null) C[k] = code;
+    if (!k || !v) continue;
+    C[k] = v[0] === '#' ? v : (num(v) ?? C[k]);
   }
 }
 
@@ -180,7 +230,14 @@ for (let i = 2; i < process.argv.length; i++) {
 if (dumpConfig) {
   process.stdout.write(
     JSON.stringify(
-      { theme: themeName, colors: C, percent: { amberAt, redAt }, segments, font },
+      {
+        theme: themeName,
+        availableThemes: Object.keys(THEMES),
+        colors: C,
+        percent: { amberAt, redAt },
+        segments,
+        font,
+      },
       null,
       2
     ) + '\n'
@@ -190,8 +247,20 @@ if (dumpConfig) {
 
 // ── Color + glyphs ────────────────────────────────────────────
 
-const bg = useColor ? (n) => `\x1b[48;5;${n}m` : () => '';
-const fg = useColor ? (n) => `\x1b[38;5;${n}m` : () => '';
+// A color is either a 256-color code (number) or a '#rrggbb' string
+// (truecolor). Truecolor lets the popular themes below match their real
+// palettes; 256-code themes still work for limited terminals.
+function ansiColor(layer, v) {
+  if (typeof v === 'string' && v[0] === '#') {
+    const r = parseInt(v.slice(1, 3), 16);
+    const g = parseInt(v.slice(3, 5), 16);
+    const b = parseInt(v.slice(5, 7), 16);
+    return `\x1b[${layer};2;${r};${g};${b}m`;
+  }
+  return `\x1b[${layer};5;${v}m`;
+}
+const bg = useColor ? (v) => ansiColor(48, v) : () => '';
+const fg = useColor ? (v) => ansiColor(38, v) : () => '';
 const rst = useColor ? () => '\x1b[0m' : () => '';
 
 const NO_PUA_TERMINALS = ['Apple_Terminal', 'vscode'];
