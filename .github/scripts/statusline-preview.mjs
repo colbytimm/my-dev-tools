@@ -210,7 +210,10 @@ for (const [agent, payload] of Object.entries(payloads)) {
       }
     }
 
-    process.stdout.write(`\n\x1b[1m[${osLabel}] ${agent} — ${mode.label}\x1b[0m\n${out}\n`);
+    // The log/summary fonts can't render PUA powerline glyphs either, so show a
+    // chevron stand-in in text; the SVG artifacts keep the real shapes.
+    const logText = out.replace(/[\u{E0B0}\u{E0B1}]/gu, '❯');
+    process.stdout.write(`\n\x1b[1m[${osLabel}] ${agent} — ${mode.label}\x1b[0m\n${logText}\n`);
     md += `**${mode.label}**\n\n\`\`\`\n${preview}\n\`\`\`\n\n`;
 
     if (mode.svg) {
