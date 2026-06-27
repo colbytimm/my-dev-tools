@@ -125,6 +125,8 @@ Configure or extend the harness/environment.
 
 Install and configure a Powerlevel10k-styled status line for coding agents that support a command-backed statusline (Claude Code and GitHub Copilot CLI). Ships a portable Node renderer (`statusline.js`, no `jq`/`bc`) that reads the host agent's session JSON on stdin and prints a powerline bar: agent + model, git branch, context-window usage, a fill gauge, elapsed time, and line changes. Works the same on macOS, Linux, and Windows; auto-detects the agent and falls back to a generic adapter. Codex CLI and Gemini CLI render their status lines internally and can't be driven by it.
 
+![Statusline rendered for Claude and Copilot, across the built-in themes (p10k, mono, Dracula, Nord, Gruvbox, Tokyo Night, Catppuccin, One Dark, Solarized, Monokai), and at green/amber/red usage levels](docs/images/statusline-showcase.svg)
+
 #### domain
 
 Encode project- or stack-specific knowledge.

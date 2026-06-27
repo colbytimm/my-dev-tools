@@ -23,8 +23,6 @@ bar to stdout.
  Claude Opus │ feat/x ! │ ctx 86.2k/200.0k │ ████░░░░░░ │ 01:02:05 │ +156/-23 │
 ```
 
-![Statusline rendered for Claude and Copilot, across the built-in themes (p10k, mono, Dracula, Nord, Gruvbox, Tokyo Night, Catppuccin, One Dark, Solarized, Monokai), and at green/amber/red usage levels](assets/showcase.svg)
-
 ## Pick the script
 
 Both live in `scripts/`. **Use `statusline.js`** — it is the portable version.

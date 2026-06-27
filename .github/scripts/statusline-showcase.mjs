@@ -14,7 +14,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..', '..');
 const skill = path.join(root, 'agents', 'skills', 'env', 'statusline-install');
 const script = path.join(skill, 'scripts', 'statusline.js');
-const assets = path.join(skill, 'assets');
+const assets = path.join(root, 'docs', 'images');
 mkdirSync(assets, { recursive: true });
 
 const CFG = JSON.parse(execFileSync(process.execPath, [script, '--dump-config'], { encoding: 'utf8' }));
@@ -207,6 +207,6 @@ for (const it of items) {
 }
 svg += '</svg>';
 
-const outFile = path.join(assets, 'showcase.svg');
+const outFile = path.join(assets, 'statusline-showcase.svg');
 writeFileSync(outFile, svg);
 console.log(`wrote ${path.relative(root, outFile)} (${(svg.length / 1024).toFixed(1)} KB, ${Math.ceil(totalW)}x${Math.ceil(totalH)})`);
