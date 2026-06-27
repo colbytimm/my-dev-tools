@@ -149,15 +149,32 @@ function ansiToSvg(ansi) {
         `<rect x="${(8 + r.col * cw).toFixed(1)}" y="4" width="${(r.text.length * cw).toFixed(1)}" height="22" fill="${r.bg}"/>`
     )
     .join('');
-  const texts = runs
-    .map(
-      (r) =>
-        `<tspan x="${(8 + r.col * cw).toFixed(1)}" fill="${r.fg}">${xmlEscape(r.text)}</tspan>`
-    )
-    .join('');
+  // Powerline separators live in the Private Use Area and won't render without
+  // a patched font in the viewer, so draw them as vector shapes: E0B0 a filled
+  // tail triangle, E0B1 a thin chevron. Every other glyph is placed per cell at
+  // its column so alignment never depends on the font's advance width.
+  const shapes = [];
+  let texts = '';
+  for (const r of runs) {
+    for (let i = 0; i < r.text.length; i++) {
+      const cp = r.text.codePointAt(i);
+      const x = 8 + (r.col + i) * cw;
+      if (cp === 0xe0b0) {
+        shapes.push(
+          `<polygon points="${x.toFixed(1)},4 ${(x + cw).toFixed(1)},15 ${x.toFixed(1)},26" fill="${r.fg}"/>`
+        );
+      } else if (cp === 0xe0b1) {
+        shapes.push(
+          `<polyline points="${(x + 2).toFixed(1)},7 ${(x + cw - 2).toFixed(1)},15 ${(x + 2).toFixed(1)},23" fill="none" stroke="${r.fg}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>`
+        );
+      } else {
+        texts += `<tspan x="${x.toFixed(1)}" fill="${r.fg}">${xmlEscape(r.text[i])}</tspan>`;
+      }
+    }
+  }
   return (
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" font-family="'JetBrainsMono Nerd Font','Hack Nerd Font','DejaVu Sans Mono',monospace" font-size="${fontSize}">` +
-    `<rect width="100%" height="100%" fill="#1d1f21"/>${rects}` +
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" font-family="'DejaVu Sans Mono','Menlo','Consolas',monospace" font-size="${fontSize}">` +
+    `<rect width="100%" height="100%" fill="#1d1f21"/>${rects}${shapes.join('')}` +
     `<text y="20" xml:space="preserve">${texts}</text></svg>`
   );
 }
@@ -165,7 +182,9 @@ function ansiToSvg(ansi) {
 // ── Run ───────────────────────────────────────────────────────
 const expect = { Claude: ['Claude', 'ctx', '5h'], Copilot: ['Copilot', 'ctx'] };
 let failures = 0;
-let md = `## Statusline preview — ${osLabel} \`${process.platform}\`, Node ${process.version}\n\n`;
+let md =
+  `## Statusline preview — ${osLabel} \`${process.platform}\`, Node ${process.version}\n\n` +
+  '> Powerline separators show as `❯` in the text previews below (the summary font has no patched glyphs); the SVG artifacts draw them as real shapes.\n\n';
 
 for (const [agent, payload] of Object.entries(payloads)) {
   md += `### ${agent}\n\n`;
@@ -180,6 +199,7 @@ for (const [agent, payload] of Object.entries(payloads)) {
       continue;
     }
     const plain = stripAnsi(out);
+    const preview = plain.replace(/[\u{E0B0}\u{E0B1}]/gu, '❯');
 
     if (mode.key === 'nocolor') {
       for (const needle of expect[agent]) {
@@ -191,7 +211,7 @@ for (const [agent, payload] of Object.entries(payloads)) {
     }
 
     process.stdout.write(`\n\x1b[1m[${osLabel}] ${agent} — ${mode.label}\x1b[0m\n${out}\n`);
-    md += `**${mode.label}**\n\n\`\`\`\n${plain}\n\`\`\`\n\n`;
+    md += `**${mode.label}**\n\n\`\`\`\n${preview}\n\`\`\`\n\n`;
 
     if (mode.svg) {
       const file = path.join(outDir, `${process.platform}-${agent}-${mode.key}.svg`);
