@@ -1,5 +1,5 @@
 ---
-name: statusline
+name: statusline-install
 description: Install and configure a Powerlevel10k-styled status line for terminal
   coding agents that support a command-backed statusline (Claude Code and GitHub
   Copilot CLI). Ships a portable, dependency-light Node renderer (statusline.js)

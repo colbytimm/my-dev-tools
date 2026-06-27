@@ -121,7 +121,7 @@ Run a multi-step workflow. _No skills yet._
 
 Configure or extend the harness/environment.
 
-##### [statusline](agents/skills/env/statusline/SKILL.md)
+##### [statusline-install](agents/skills/env/statusline-install/SKILL.md)
 
 Install and configure a Powerlevel10k-styled status line for coding agents that support a command-backed statusline (Claude Code and GitHub Copilot CLI). Ships a portable Node renderer (`statusline.js`, no `jq`/`bc`) that reads the host agent's session JSON on stdin and prints a powerline bar: agent + model, git branch, context-window usage, a fill gauge, elapsed time, and line changes. Works the same on macOS, Linux, and Windows; auto-detects the agent and falls back to a generic adapter. Codex CLI and Gemini CLI render their status lines internally and can't be driven by it.
 
