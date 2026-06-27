@@ -115,6 +115,68 @@ the bar stuck on "waiting for first exchange" — `statusline.js` fixes this.
 
 Force an adapter with `--adapter claude-code | copilot | generic`.
 
+## Configuration
+
+Everything tunable lives in a `CONFIG` block at the top of
+`scripts/statusline.js` — edit the defaults there. Each value also takes an
+environment-variable override, so you can tweak an install without forking the
+file. Print the resolved config with `node scripts/statusline.js --dump-config`.
+
+### Segments
+
+Show or hide any value. A disabled segment drops its divider with it (no
+dangling separators). Defaults live in the `SEGMENTS` object; override one with
+`STATUSLINE_SHOW_<NAME>=true|false`:
+
+| Segment | Env override | Shows |
+| --- | --- | --- |
+| `model` | `STATUSLINE_SHOW_MODEL` | model name after the agent |
+| `gitBranch` | `STATUSLINE_SHOW_GITBRANCH` | git branch + dirty marker |
+| `context` | `STATUSLINE_SHOW_CONTEXT` | ctx tokens used / limit |
+| `gauge` | `STATUSLINE_SHOW_GAUGE` | context-window fill gauge |
+| `duration` | `STATUSLINE_SHOW_DURATION` | elapsed session time |
+| `limits` | `STATUSLINE_SHOW_LIMITS` | Claude usage limits |
+| `lines` | `STATUSLINE_SHOW_LINES` | +added / -removed |
+| `custom` | `STATUSLINE_SHOW_CUSTOM` | custom env-var segments |
+
+```sh
+# hide the gauge and line counts (their dividers go too)
+STATUSLINE_SHOW_GAUGE=false STATUSLINE_SHOW_LINES=false
+```
+
+### Percent thresholds
+
+The gauge and usage-limit percentages step green → amber → red at these cutoffs
+(`PERCENT` in the config):
+
+```sh
+STATUSLINE_AMBER_AT=50   # >= this is amber
+STATUSLINE_RED_AT=80     # >= this is red
+```
+
+### Themes
+
+Colors come from a named 256-color palette. Built-ins: `p10k` (default) and
+`mono`. Select one with `STATUSLINE_THEME=mono`. Add your own by adding a key to
+the `THEMES` object (use the same keys as `p10k`). Override individual colors
+without forking via `STATUSLINE_COLORS` (`key=256-code`, comma-separated):
+
+```sh
+STATUSLINE_THEME=mono
+STATUSLINE_COLORS="agent=33,gaugeHi=201"
+```
+
+### Font
+
+Applies only to image/SVG rendering (the terminal owns the font for live
+output); the preview workflow reads it via `--dump-config`. Defaults in `FONT`:
+
+```sh
+STATUSLINE_FONT_FAMILY="'JetBrains Mono', monospace"
+STATUSLINE_FONT_WEIGHT=bold
+STATUSLINE_FONT_SIZE=16
+```
+
 ## Custom segments
 
 Add environment-variable segments via `STATUSLINE_CUSTOM_SEGMENTS`
@@ -152,6 +214,10 @@ counter), so a "usage left" segment can't be computed for it from stdin alone.
 | `--powerline` / `--no-powerline` (`--plain`) | Force powerline glyphs on/off (default auto by `TERM_PROGRAM`) |
 | `STATUSLINE_POWERLINE=auto\|true\|false`    | Same as above via env; `auto` degrades on Apple Terminal / VS Code |
 | `--debug` / `STATUSLINE_DEBUG=true`         | Log raw payloads to `$TMPDIR/statusline-debug.log` |
+| `--dump-config`                             | Print resolved theme, colors, segments, and font as JSON |
+
+See [Configuration](#configuration) for segment toggles, percent thresholds,
+themes, and font.
 
 ## Verify
 

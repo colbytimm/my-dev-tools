@@ -27,6 +27,15 @@ const script = path.join(
 const outDir = path.join(root, 'statusline-preview');
 mkdirSync(outDir, { recursive: true });
 
+// Pull the resolved font/theme straight from the skill so the SVG matches
+// the live config (single source of truth).
+let CFG = { font: { family: "'DejaVu Sans Mono', Menlo, Consolas, monospace", weight: 'normal', size: 15 } };
+try {
+  CFG = JSON.parse(execFileSync(process.execPath, [script, '--dump-config'], { encoding: 'utf8' }));
+} catch {
+  /* fall back to defaults */
+}
+
 const osLabel =
   { darwin: 'macOS', linux: 'Linux', win32: 'Windows' }[process.platform] ??
   process.platform;
@@ -99,8 +108,8 @@ const xmlEscape = (s) =>
 
 // Minimal single-line ANSI → SVG. Handles 38;5;N / 48;5;N / 0 (reset).
 function ansiToSvg(ansi) {
-  const cw = 8.4;
-  const fontSize = 15;
+  const fontSize = CFG.font.size;
+  const cw = fontSize * 0.56;
   let fg = '#cccccc';
   let bg = null;
   const runs = [];
@@ -173,7 +182,7 @@ function ansiToSvg(ansi) {
     }
   }
   return (
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" font-family="'DejaVu Sans Mono','Menlo','Consolas',monospace" font-size="${fontSize}">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" font-family="${xmlEscape(CFG.font.family)}" font-weight="${CFG.font.weight}" font-size="${fontSize}">` +
     `<rect width="100%" height="100%" fill="#1d1f21"/>${rects}${shapes.join('')}` +
     `<text y="20" xml:space="preserve">${texts}</text></svg>`
   );
