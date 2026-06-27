@@ -136,10 +136,10 @@ function formatReset(epochSec) {
   return `${Math.floor(secs / 60)}m`;
 }
 
-function limitColor(remaining) {
+function limitColor(used) {
   if (!useColor) return '';
-  if (remaining <= 15) return fg(FG.GAUGE_HI);
-  if (remaining <= 40) return fg(FG.GAUGE_MID);
+  if (used >= 80) return fg(FG.GAUGE_HI);
+  if (used >= 50) return fg(FG.GAUGE_MID);
   return fg(FG.GAUGE_LO);
 }
 
@@ -412,11 +412,11 @@ if (loading) {
   if (showLimits && sl.limits.length) {
     out += `${fg(FG.SUBSEP)}${SUBSEP}`;
     const parts = sl.limits.map((w) => {
-      const remaining = Math.max(0, Math.round(100 - w.usedPct));
+      const used = Math.min(100, Math.max(0, Math.round(w.usedPct)));
       const reset = formatReset(w.resetsAt);
       return (
-        `${fg(FG.CTX_LABEL)}${w.label} ${limitColor(remaining)}${remaining}%` +
-        (reset ? `${fg(FG.TIME)} ${reset}` : '')
+        `${fg(FG.CTX_LABEL)}${w.label} ${limitColor(used)}${used}% used` +
+        (reset ? `${fg(FG.TIME)} (${reset})` : '')
       );
     });
     out += ` ${parts.join(`${fg(FG.SUBSEP)} \u00b7 `)} `;
