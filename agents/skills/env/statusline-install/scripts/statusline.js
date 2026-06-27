@@ -18,7 +18,8 @@
 //   echo '{...}' | node statusline.js --adapter claude-code
 //   echo '{...}' | node statusline.js --no-color
 //
-// Requirements: node >= 18, git on PATH, a powerline-patched font.
+// Requirements: node >= 18, git on PATH. A powerline-patched font renders the
+// angled separators; without one the bar auto-degrades to plain | separators.
 // ──────────────────────────────────────────────────────────────
 
 'use strict';
@@ -40,6 +41,12 @@ const customSegmentsFile =
 
 let debug = (env.STATUSLINE_DEBUG ?? 'false') === 'true';
 
+// Powerline separators (U+E0B0/E0B1) live in the Unicode Private Use Area and
+// require a patched font. Terminals without one render them as tofu, so degrade
+// to a plain bar there. "auto" keeps powerline unless TERM_PROGRAM names a
+// terminal known to lack PUA glyph fallback (Apple Terminal, VS Code).
+let powerlineSetting = (env.STATUSLINE_POWERLINE ?? 'auto').toLowerCase();
+
 // ── Parse args ────────────────────────────────────────────────
 
 let adapter = 'auto';
@@ -47,6 +54,8 @@ for (let i = 2; i < process.argv.length; i++) {
   const arg = process.argv[i];
   if (arg === '--adapter') adapter = process.argv[++i] ?? 'auto';
   else if (arg === '--no-color') useColor = false;
+  else if (arg === '--powerline') powerlineSetting = 'true';
+  else if (arg === '--no-powerline' || arg === '--plain') powerlineSetting = 'false';
   else if (arg === '--debug') debug = true;
 }
 
@@ -74,8 +83,17 @@ const bg = useColor ? (n) => `\x1b[48;5;${n}m` : () => '';
 const fg = useColor ? (n) => `\x1b[38;5;${n}m` : () => '';
 const rst = useColor ? () => '\x1b[0m' : () => '';
 
-const SEP = useColor ? '' : '│'; // U+E0B0 / │
-const SUBSEP = useColor ? '' : '│'; // U+E0B1 / │
+const NO_PUA_TERMINALS = ['Apple_Terminal', 'vscode'];
+const usePowerline = !useColor
+  ? false
+  : powerlineSetting === 'true' || powerlineSetting === '1'
+    ? true
+    : powerlineSetting === 'false' || powerlineSetting === '0'
+      ? false
+      : !NO_PUA_TERMINALS.includes(env.TERM_PROGRAM ?? '');
+
+const SEP = ''; // powerline tail; emitted only when usePowerline
+const SUBSEP = usePowerline ? '' : '│';
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -404,10 +422,10 @@ if (loading) {
   }
 }
 
-if (useColor) {
+if (usePowerline) {
   out += `${rst()}${fg(BG)}${SEP}${rst()}`;
 } else {
-  out += SEP;
+  out += rst();
 }
 
 process.stdout.write(out);

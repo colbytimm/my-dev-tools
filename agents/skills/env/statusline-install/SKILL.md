@@ -33,9 +33,23 @@ Both live in `scripts/`. **Use `statusline.js`** — it is the portable version.
 | `statusline.zsh` | macOS, Linux (zsh)     | `zsh`, `jq`, `bc`, `git` |
 
 `statusline.zsh` is the original, kept for reference; it won't run on Windows
-(no zsh) and uses zsh-only syntax bash can't execute. A [powerline-patched
-font](https://github.com/romkatv/powerlevel10k#fonts) is required for the ``
-separators and gauge glyphs.
+(no zsh) and uses zsh-only syntax bash can't execute.
+
+### Fonts and the powerline separators
+
+The angled separators between segments are powerline glyphs (`U+E0B0`/`U+E0B1`)
+that live in the Unicode Private Use Area and need a [powerline-patched
+font](https://github.com/romkatv/powerlevel10k#fonts). Terminals with one
+(Ghostty, iTerm2/Kitty/WezTerm with a Nerd Font, etc.) render the full bar.
+Terminals without one (notably **Apple Terminal.app**) show the separators as
+tofu (`▯`).
+
+`statusline.js` handles this: it keeps powerline glyphs by default but
+auto-degrades to a plain `│` separator (color and gauge intact) when
+`TERM_PROGRAM` is a terminal known to lack the glyphs (Apple Terminal, VS Code).
+Override with `STATUSLINE_POWERLINE=true|false` or `--powerline`/`--no-powerline`.
+For the full powerline look in Apple Terminal, set its profile font to a Nerd
+Font instead.
 
 ## Supported agents
 
@@ -117,7 +131,9 @@ export STATUSLINE_CUSTOM_SEGMENTS="AWS_PROFILE:aws:208,KUBECONTEXT:k8s:134"
 | Flag / variable                             | Effect                                         |
 | ------------------------------------------- | ---------------------------------------------- |
 | `--adapter <name>`                          | Force `claude-code`, `copilot`, or `generic`   |
-| `--no-color` / `STATUSLINE_USE_COLOR=false` | Plain output with `│` separators               |
+| `--no-color` / `STATUSLINE_USE_COLOR=false` | Plain output with `│` separators, no color     |
+| `--powerline` / `--no-powerline` (`--plain`) | Force powerline glyphs on/off (default auto by `TERM_PROGRAM`) |
+| `STATUSLINE_POWERLINE=auto\|true\|false`    | Same as above via env; `auto` degrades on Apple Terminal / VS Code |
 | `--debug` / `STATUSLINE_DEBUG=true`         | Log raw payloads to `$TMPDIR/statusline-debug.log` |
 
 ## Verify
