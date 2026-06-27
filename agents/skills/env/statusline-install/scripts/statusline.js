@@ -77,50 +77,27 @@ const PERCENT = {
 
 // ── Themes ────────────────────────────────────────────────────
 // Named palettes. Select one with STATUSLINE_THEME (default "p10k").
-// Add a built-in by adding a key with the same shape. A color is either
-// a 256-color code (number) or a '#rrggbb' string (truecolor). Override
-// individual colors via STATUSLINE_COLORS, e.g. "agent=33,gaugeHi=201".
+// Add a built-in by adding a key with the same shape. Built-in colors are
+// '#rrggbb' truecolor (needs a 24-bit terminal); a 256-color code (number)
+// also works. Override individual colors via STATUSLINE_COLORS, e.g.
+// "agent=#ff79c6,gaugeHi=#ff5555".
 const THEMES = {
-  // Powerlevel10k classic — the original look.
+  // Powerlevel10k classic — the original look (xterm-256 equivalents).
   p10k: {
-    bg: 236,
-    agent: 180,
-    model: 66,
-    branch: 76,
-    branchDirty: 178,
-    ctx: 39,
-    ctxLabel: 103,
-    gaugeLo: 76,
-    gaugeMid: 178,
-    gaugeHi: 196,
-    track: 240,
-    time: 248,
-    add: 70,
-    del: 160,
-    diff: 134,
-    subsep: 244,
+    bg: '#303030', agent: '#d7af87', model: '#5f8787', branch: '#5fd700',
+    branchDirty: '#d7af00', ctx: '#00afff', ctxLabel: '#8787af', gaugeLo: '#5fd700',
+    gaugeMid: '#d7af00', gaugeHi: '#ff0000', track: '#585858', time: '#a8a8a8',
+    add: '#5faf00', del: '#d70000', diff: '#af5fd7', subsep: '#808080',
   },
   // Grayscale — low-key, no hue.
   mono: {
-    bg: 236,
-    agent: 253,
-    model: 245,
-    branch: 250,
-    branchDirty: 247,
-    ctx: 253,
-    ctxLabel: 245,
-    gaugeLo: 250,
-    gaugeMid: 247,
-    gaugeHi: 231,
-    track: 239,
-    time: 245,
-    add: 252,
-    del: 244,
-    diff: 250,
-    subsep: 240,
+    bg: '#303030', agent: '#dadada', model: '#8a8a8a', branch: '#bcbcbc',
+    branchDirty: '#9e9e9e', ctx: '#dadada', ctxLabel: '#8a8a8a', gaugeLo: '#bcbcbc',
+    gaugeMid: '#9e9e9e', gaugeHi: '#ffffff', track: '#4e4e4e', time: '#8a8a8a',
+    add: '#d0d0d0', del: '#808080', diff: '#bcbcbc', subsep: '#585858',
   },
 
-  // Popular editor themes (truecolor; needs a 24-bit terminal).
+  // Popular editor themes.
   dracula: {
     bg: '#282a36', agent: '#bd93f9', model: '#6272a4', branch: '#50fa7b',
     branchDirty: '#ffb86c', ctx: '#8be9fd', ctxLabel: '#6272a4', gaugeLo: '#50fa7b',

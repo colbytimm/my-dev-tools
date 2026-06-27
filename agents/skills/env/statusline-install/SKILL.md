@@ -158,13 +158,14 @@ STATUSLINE_RED_AT=80     # >= this is red
 
 Colors come from a named palette. Select one with `STATUSLINE_THEME`. Built-ins:
 
-- `p10k` (default), `mono` — 256-color, work on any terminal.
+- `p10k` (default) and `mono` — neutral palettes.
 - `dracula`, `nord`, `gruvbox`, `tokyonight`, `catppuccin`, `onedark`,
-  `solarized`, `monokai` — truecolor, matched to the real editor palettes
-  (needs a 24-bit-color terminal; most modern ones qualify).
+  `solarized`, `monokai` — matched to the real editor palettes.
 
-Add your own by adding a key to the `THEMES` object (use the same keys as
-`p10k`). A color value is either a 256-color code (number) or a `#rrggbb` string.
+All built-in palettes are truecolor `#rrggbb`, so they need a 24-bit-color
+terminal (most modern ones qualify). Add your own by adding a key to the
+`THEMES` object (same keys as `p10k`); a color value is a `#rrggbb` string or a
+256-color code (number).
 Override individual colors without forking via `STATUSLINE_COLORS`
 (`key=value`, comma-separated; value is a code or hex):
 
