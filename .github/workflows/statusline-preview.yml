@@ -35,7 +35,7 @@ jobs:
       - name: Render via PowerShell (stdin pipe)
         shell: pwsh
         run: |
-          $payload = '{"model":{"display_name":"Opus"},"cwd":".","context_window":{"total_input_tokens":85000,"context_window_size":1000000,"used_percentage":26},"cost":{"total_duration_ms":3000},"rate_limits":{"five_hour":{"used_percentage":13,"resets_at":9999999999}}}'
+          $payload = '{"model":{"display_name":"Opus"},"cwd":".","context_window":{"total_input_tokens":85000,"context_window_size":1000000,"used_percentage":26},"cost":{"total_duration_ms":3000},"rate_limits":{"five_hour":{"used_percentage":13}}}'
           $out = $payload | node agents/skills/env/statusline-install/scripts/statusline.js --no-color
           Write-Host "PowerShell render: $out"
           if (-not $out.Contains('Claude') -or -not $out.Contains('5h 13%')) {
