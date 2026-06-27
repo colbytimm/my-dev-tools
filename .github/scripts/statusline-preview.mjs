@@ -55,6 +55,7 @@ const stripAnsi = (s) => s.replace(/\x1b\[[0-9;]*m/g, '');
 const chevronize = (s) => s.replace(/[\u{E0B0}\u{E0B1}]/gu, '❯');
 
 // ── Payloads ──────────────────────────────────────────────────
+const now = Math.floor(Date.now() / 1000);
 const claude = (used, fiveH, sevenD) => ({
   model: { display_name: 'Opus 4.8' },
   cwd: process.cwd(),
@@ -65,8 +66,9 @@ const claude = (used, fiveH, sevenD) => ({
   },
   cost: { total_duration_ms: 725_000, total_lines_added: 156, total_lines_removed: 23 },
   rate_limits: {
-    five_hour: { used_percentage: fiveH },
-    seven_day: { used_percentage: sevenD },
+    // small buffer past the boundary so the floored countdown reads cleanly
+    five_hour: { used_percentage: fiveH, resets_at: now + 3 * 3600 + 600 },
+    seven_day: { used_percentage: sevenD, resets_at: now + 2 * 86400 + 3600 },
   },
 });
 const copilot = {
