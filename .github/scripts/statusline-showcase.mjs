@@ -52,6 +52,21 @@ const copilot = {
   },
   cost: { total_duration_ms: 1_054_000, total_lines_added: 10, total_lines_removed: 4 },
 };
+// Forward-ready: Codex has no command-backed statusline hook yet
+// (openai/codex#20043). This mirrors Codex's documented hook JSON shape so the
+// showcase proves the `codex` adapter renders the day that hook ships.
+const codex = {
+  model: 'gpt-5.4-codex',
+  model_provider: 'openai',
+  session_id: '019a1f6e-codex-demo',
+  cwd: root,
+  context_window: {
+    total_input_tokens: 96_000,
+    context_window_size: 272_000,
+    used_percentage: 35,
+  },
+  cost: { total_duration_ms: 612_000, total_lines_added: 88, total_lines_removed: 12 },
+};
 
 function render(payload, theme) {
   const extra = theme ? { STATUSLINE_THEME: theme } : {};
@@ -67,6 +82,8 @@ const rows = [
   { section: 'Harnesses' },
   { label: 'Claude', ansi: render(claude(34, 13, 48)) },
   { label: 'Copilot', ansi: render(copilot) },
+  { section: 'Forward-ready — no command hook yet (openai/codex#20043)' },
+  { label: 'Codex', ansi: render(codex) },
   { section: 'Themes' },
   ...CFG.availableThemes.map((t) => ({ label: t, ansi: render(claude(34, 13, 48), t) })),
   { section: 'Usage % — green · amber · red' },

@@ -123,9 +123,9 @@ Configure or extend the harness/environment.
 
 ##### [statusline-install](agents/skills/env/statusline-install/SKILL.md)
 
-Install and configure a Powerlevel10k-styled status line for coding agents that support a command-backed statusline (Claude Code and GitHub Copilot CLI). Ships a portable Node renderer (`statusline.js`, no `jq`/`bc`) that reads the host agent's session JSON on stdin and prints a powerline bar: agent + model, git branch, context-window usage, a fill gauge, elapsed time, and line changes. Works the same on macOS, Linux, and Windows; auto-detects the agent and falls back to a generic adapter. Codex CLI and Gemini CLI render their status lines internally and can't be driven by it.
+Install and configure a Powerlevel10k-styled status line for coding agents that support a command-backed statusline (Claude Code and GitHub Copilot CLI). Ships a portable Node renderer (`statusline.js`, no `jq`/`bc`) that reads the host agent's session JSON on stdin and prints a powerline bar: agent + model, git branch, context-window usage, a fill gauge, elapsed time, and line changes. Works the same on macOS, Linux, and Windows; auto-detects the agent and falls back to a generic adapter. Codex CLI and Gemini CLI render their status lines internally, so they can't drive it live yet — but a forward-ready `codex` adapter parses Codex's hook JSON for the day it ships a command hook ([openai/codex#20043](https://github.com/openai/codex/issues/20043)).
 
-![Statusline rendered for Claude and Copilot, across the built-in themes (p10k, mono, Dracula, Nord, Gruvbox, Tokyo Night, Catppuccin, One Dark, Solarized, Monokai), and at green/amber/red usage levels](docs/images/statusline-showcase.svg)
+![Statusline rendered for Claude and Copilot, plus a forward-ready Codex row, across the built-in themes (p10k, mono, Dracula, Nord, Gruvbox, Tokyo Night, Catppuccin, One Dark, Solarized, Monokai), and at green/amber/red usage levels](docs/images/statusline-showcase.svg)
 
 #### domain
 

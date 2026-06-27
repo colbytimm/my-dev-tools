@@ -9,7 +9,8 @@ description: Install and configure a Powerlevel10k-styled status line for termin
   fix, or port a coding-agent statusline, asks why their Claude/Copilot status bar
   is blank or stuck on "waiting for first exchange", or wants one statusline that
   works across macOS, Linux, and Windows. Codex CLI and Gemini CLI render their
-  status lines internally and cannot be driven by this skill.
+  status lines internally and can't be driven live yet (no command hook); a
+  forward-ready `codex` adapter parses Codex's hook JSON for when it ships.
 license: MIT
 ---
 
@@ -60,13 +61,18 @@ session JSON to its stdin:
 | ------------------ | --------- | -------------------------------------------------------------- |
 | Claude Code        | ✅        | `statusLine.command` in `settings.json`                        |
 | GitHub Copilot CLI | ✅        | `statusLine.command` in `~/.copilot/settings.json` (experimental) |
-| Codex CLI          | ❌        | Built-in footer only (`tui.status_line` enum); no command hook |
+| Codex CLI          | ⚠️        | Built-in footer only (`tui.status_line` enum) — **no command hook yet** ([openai/codex#20043](https://github.com/openai/codex/issues/20043)). A `codex` adapter is ready for when it ships, or behind a polling wrapper. |
 | Gemini CLI         | ❌        | Built-in footer only (`ui.footer.*`); no command hook          |
 | other / future     | ⚠️        | `--adapter generic` probes common field names                  |
 
 Codex and Gemini render their status lines internally and never hand the session
-to an external command, so there is nothing to hook into. If either ships a
-command-backed statusline, the `generic` adapter will pick it up.
+to an external command, so today there is nothing to hook into. **Codex cannot
+drive this script live** until it ships a command-backed statusline. The repo
+ships a dedicated `codex` adapter anyway — it parses Codex's documented hook JSON
+shape (string `model`, `model_provider`) so the bar renders the day that hook
+lands (or if you front Codex with a polling wrapper that pipes its session state
+to the script). Force it with `--adapter codex`. If Gemini ships a command-backed
+statusline, the `generic` adapter will pick it up.
 
 ## Setup
 
@@ -113,7 +119,9 @@ fields; only Copilot has the `current_context_*` display view. The previous zsh
 version misdetected Claude as Copilot and read the wrong field paths, which left
 the bar stuck on "waiting for first exchange" — `statusline.js` fixes this.
 
-Force an adapter with `--adapter claude-code | copilot | generic`.
+Force an adapter with `--adapter claude-code | copilot | codex | generic`. The
+`codex` adapter is auto-detected from Codex's top-level `model_provider` (and a
+plain-string `model`), which Claude and Copilot never emit.
 
 ## Configuration
 
@@ -219,7 +227,7 @@ counter), so a "usage left" segment can't be computed for it from stdin alone.
 
 | Flag / variable                             | Effect                                         |
 | ------------------------------------------- | ---------------------------------------------- |
-| `--adapter <name>`                          | Force `claude-code`, `copilot`, or `generic`   |
+| `--adapter <name>`                          | Force `claude-code`, `copilot`, `codex`, or `generic` |
 | `STATUSLINE_LIMITS=false`                   | Hide the Claude usage-limit segment (default shown when present) |
 | `--no-color` / `STATUSLINE_USE_COLOR=false` | Plain output with `│` separators, no color     |
 | `--powerline` / `--no-powerline` (`--plain`) | Force powerline glyphs on/off (default auto by `TERM_PROGRAM`) |

@@ -9,6 +9,12 @@
 // Supported harnesses:
 //   • Claude Code        (settings.json -> statusLine.command)
 //   • GitHub Copilot CLI (~/.copilot/settings.json -> statusLine.command)
+//   • Codex CLI          (forward-ready: parses Codex's hook JSON shape.
+//                          Codex has no command-backed statusline hook yet
+//                          — see openai/codex#20043 — so it can't drive this
+//                          live today; the adapter is ready for when it can,
+//                          or behind a polling wrapper. Force with
+//                          --adapter codex.)
 //   • generic            (best-effort field probing for anything that
 //                          copies the JSON-on-stdin pattern)
 //
@@ -360,6 +366,13 @@ function detectAdapter(data) {
   ) {
     return 'copilot';
   }
+  // Codex's hook JSON carries a top-level `model_provider` (and a plain-string
+  // `model`), neither of which Claude or Copilot emit — distinctive enough to
+  // detect on. Checked before claude-code so a future Codex payload that also
+  // adds Claude-style context_window fields still routes to the Codex adapter.
+  if (has('model_provider') || typeof getPath(data, 'model') === 'string') {
+    return 'codex';
+  }
   if (
     has(
       'context_window.used_percentage',
@@ -408,6 +421,33 @@ function normalize(adapter, data) {
       session.linesAdded = read('cost.total_lines_added') ?? 0;
       session.linesRemoved = read('cost.total_lines_removed') ?? 0;
       break;
+
+    case 'codex': {
+      session.agentName = 'Codex';
+      // Codex's hook schema carries `model` as a plain string; fall back to the
+      // object shapes in case a future payload nests it like the others do.
+      session.model = read('model.display_name', 'model.id', 'model');
+      session.cwd = read('cwd', 'workspace.current_dir');
+      session.ctxCurrent = read(
+        'context_window.current_context_tokens',
+        'context_window.total_input_tokens',
+        'token_count',
+        'tokens_used'
+      );
+      session.ctxLimit = read(
+        'context_window.displayed_context_limit',
+        'context_window.context_window_size',
+        'context_window_size'
+      );
+      session.ctxPct = read(
+        'context_window.current_context_used_percentage',
+        'context_window.used_percentage'
+      );
+      session.durationMs = read('cost.total_duration_ms', 'duration_ms');
+      session.linesAdded = read('cost.total_lines_added', 'lines_added') ?? 0;
+      session.linesRemoved = read('cost.total_lines_removed', 'lines_removed') ?? 0;
+      break;
+    }
 
     case 'claude-code': {
       session.agentName = 'Claude';

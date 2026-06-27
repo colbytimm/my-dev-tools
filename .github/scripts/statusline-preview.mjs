@@ -89,6 +89,22 @@ const copilot = {
   },
   cost: { total_duration_ms: 1_054_000, total_lines_added: 10, total_lines_removed: 4 },
 };
+// Codex CLI has no command-backed statusline hook yet (openai/codex#20043), so it
+// cannot drive this script live today. This payload mirrors Codex's documented
+// hook JSON shape (string `model`, `model_provider`) to prove the `codex` adapter
+// is ready for when that hook ships — or behind a polling wrapper.
+const codex = {
+  model: 'gpt-5.4-codex',
+  model_provider: 'openai',
+  session_id: '019a1f6e-codex-demo',
+  cwd: process.cwd(),
+  context_window: {
+    total_input_tokens: 96_000,
+    context_window_size: 272_000,
+    used_percentage: 35,
+  },
+  cost: { total_duration_ms: 612_000, total_lines_added: 88, total_lines_removed: 12 },
+};
 
 // ── ANSI → SVG ────────────────────────────────────────────────
 const PAD = 8; // left/right inner padding around the bar
@@ -138,9 +154,15 @@ function emit(label, ansi, svgName) {
 
 // A. Adapters (cross-OS smoke)
 md += '### Adapters\n\n';
+md +=
+  '> **Codex** is forward-ready: Codex CLI has no command-backed statusline hook yet ' +
+  '([openai/codex#20043](https://github.com/openai/codex/issues/20043)), so it cannot drive ' +
+  'this script live today. The case below renders Codex\'s documented hook JSON shape to prove ' +
+  'the adapter is ready for when that hook ships (or behind a polling wrapper).\n\n';
 const adapterCases = [
   ['Claude', claude(26, 13, 64), ['Claude', 'ctx', '5h']],
   ['Copilot', copilot, ['Copilot', 'ctx']],
+  ['Codex', codex, ['Codex', 'ctx']],
 ];
 for (const [agent, payload, expect] of adapterCases) {
   let out;
