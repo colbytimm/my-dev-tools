@@ -34,11 +34,17 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 
 const env = process.env;
+const GAUGE_CELLS = 10; // width of the context-fill gauge, in cells
+const STDIN_FD = 0;
 
 function num(val) {
   if (val === null || val === undefined || val === '') return null;
   const n = Number(val);
   return Number.isFinite(n) ? n : null;
+}
+
+function clampPercent(n) {
+  return Math.min(100, Math.max(0, Math.round(n)));
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -70,10 +76,10 @@ const PERCENT = {
 };
 
 // ── Themes ────────────────────────────────────────────────────
-// Named 256-color palettes. Select one with STATUSLINE_THEME (default
-// "p10k"). Add a built-in theme by adding a key with the same shape.
-// Override individual colors without forking via STATUSLINE_COLORS,
-// e.g. STATUSLINE_COLORS="agent=33,gaugeHi=201".
+// Named palettes. Select one with STATUSLINE_THEME (default "p10k").
+// Add a built-in by adding a key with the same shape. A color is either
+// a 256-color code (number) or a '#rrggbb' string (truecolor). Override
+// individual colors via STATUSLINE_COLORS, e.g. "agent=33,gaugeHi=201".
 const THEMES = {
   // Powerlevel10k classic — the original look.
   p10k: {
@@ -114,7 +120,7 @@ const THEMES = {
     subsep: 240,
   },
 
-  // ── Popular editor themes (truecolor; needs a 24-bit terminal) ──
+  // Popular editor themes (truecolor; needs a 24-bit terminal).
   dracula: {
     bg: '#282a36', agent: '#bd93f9', model: '#6272a4', branch: '#50fa7b',
     branchDirty: '#ffb86c', ctx: '#8be9fd', ctxLabel: '#6272a4', gaugeLo: '#50fa7b',
@@ -198,12 +204,12 @@ const amberAt = num(env.STATUSLINE_AMBER_AT) ?? PERCENT.amberAt;
 const redAt = num(env.STATUSLINE_RED_AT) ?? PERCENT.redAt;
 
 const themeName = THEMES[env.STATUSLINE_THEME] ? env.STATUSLINE_THEME : 'p10k';
-const C = { ...THEMES.p10k, ...THEMES[themeName] };
+const colors = { ...THEMES.p10k, ...THEMES[themeName] };
 if (env.STATUSLINE_COLORS) {
   for (const pair of env.STATUSLINE_COLORS.split(',')) {
     const [k, v] = pair.split('=').map((s) => (s ?? '').trim());
     if (!k || !v) continue;
-    C[k] = v[0] === '#' ? v : (num(v) ?? C[k]);
+    colors[k] = v[0] === '#' ? v : (num(v) ?? colors[k]);
   }
 }
 
@@ -213,13 +219,11 @@ const font = {
   size: num(env.STATUSLINE_FONT_SIZE) ?? FONT.size,
 };
 
-// ── Parse args ────────────────────────────────────────────────
-
-let adapter = 'auto';
+let adapterOverride = 'auto';
 let dumpConfig = false;
 for (let i = 2; i < process.argv.length; i++) {
   const arg = process.argv[i];
-  if (arg === '--adapter') adapter = process.argv[++i] ?? 'auto';
+  if (arg === '--adapter') adapterOverride = process.argv[++i] ?? 'auto';
   else if (arg === '--no-color') useColor = false;
   else if (arg === '--powerline') powerlineSetting = 'true';
   else if (arg === '--no-powerline' || arg === '--plain') powerlineSetting = 'false';
@@ -233,7 +237,7 @@ if (dumpConfig) {
       {
         theme: themeName,
         availableThemes: Object.keys(THEMES),
-        colors: C,
+        colors,
         percent: { amberAt, redAt },
         segments,
         font,
@@ -246,10 +250,7 @@ if (dumpConfig) {
 }
 
 // ── Color + glyphs ────────────────────────────────────────────
-
-// A color is either a 256-color code (number) or a '#rrggbb' string
-// (truecolor). Truecolor lets the popular themes below match their real
-// palettes; 256-code themes still work for limited terminals.
+// A color is a 256-color code (number) or a '#rrggbb' string (truecolor).
 function ansiColor(layer, v) {
   if (typeof v === 'string' && v[0] === '#') {
     const r = parseInt(v.slice(1, 3), 16);
@@ -259,23 +260,26 @@ function ansiColor(layer, v) {
   }
   return `\x1b[${layer};5;${v}m`;
 }
-const bg = useColor ? (v) => ansiColor(48, v) : () => '';
-const fg = useColor ? (v) => ansiColor(38, v) : () => '';
+const ANSI_FG = 38;
+const ANSI_BG = 48;
+const bg = useColor ? (v) => ansiColor(ANSI_BG, v) : () => '';
+const fg = useColor ? (v) => ansiColor(ANSI_FG, v) : () => '';
 const rst = useColor ? () => '\x1b[0m' : () => '';
 
+// Powerline separators (U+E0B0/E0B1) need a patched font; degrade to a
+// plain bar on terminals known to lack PUA glyph fallback.
 const NO_PUA_TERMINALS = ['Apple_Terminal', 'vscode'];
-const usePowerline = !useColor
-  ? false
-  : powerlineSetting === 'true' || powerlineSetting === '1'
-    ? true
-    : powerlineSetting === 'false' || powerlineSetting === '0'
-      ? false
-      : !NO_PUA_TERMINALS.includes(env.TERM_PROGRAM ?? '');
-
+function resolvePowerline() {
+  if (!useColor) return false;
+  if (powerlineSetting === 'true' || powerlineSetting === '1') return true;
+  if (powerlineSetting === 'false' || powerlineSetting === '0') return false;
+  return !NO_PUA_TERMINALS.includes(env.TERM_PROGRAM ?? '');
+}
+const usePowerline = resolvePowerline();
 const SUBSEP = usePowerline ? '\u{E0B1}' : '│';
-const DIV = `${fg(C.subsep)}${SUBSEP}`;
+const DIV = `${fg(colors.subsep)}${SUBSEP}`;
 
-// ── Helpers ───────────────────────────────────────────────────
+const SECONDS_PER = { day: 86400, hour: 3600, minute: 60 };
 
 function formatTokens(val) {
   const n = num(val);
@@ -289,9 +293,9 @@ function formatDuration(ms) {
   const n = num(ms);
   if (n === null) return '00:00:00';
   const totalSecs = Math.floor(n / 1000);
-  const hours = Math.floor(totalSecs / 3600);
-  const mins = Math.floor((totalSecs % 3600) / 60);
-  const secs = totalSecs % 60;
+  const hours = Math.floor(totalSecs / SECONDS_PER.hour);
+  const mins = Math.floor((totalSecs % SECONDS_PER.hour) / SECONDS_PER.minute);
+  const secs = totalSecs % SECONDS_PER.minute;
   const pad = (v) => String(v).padStart(2, '0');
   return `${pad(hours)}:${pad(mins)}:${pad(secs)}`;
 }
@@ -301,96 +305,75 @@ function formatReset(epochSec) {
   if (n === null) return '';
   const secs = Math.round(n - Date.now() / 1000);
   if (secs <= 0) return 'now';
-  if (secs >= 86400) return `${Math.floor(secs / 86400)}d`;
-  if (secs >= 3600) return `${Math.floor(secs / 3600)}h`;
-  return `${Math.floor(secs / 60)}m`;
+  if (secs >= SECONDS_PER.day) return `${Math.floor(secs / SECONDS_PER.day)}d`;
+  if (secs >= SECONDS_PER.hour) return `${Math.floor(secs / SECONDS_PER.hour)}h`;
+  return `${Math.floor(secs / SECONDS_PER.minute)}m`;
 }
 
 function percentColor(pct) {
   if (!useColor) return '';
-  if (pct >= redAt) return fg(C.gaugeHi);
-  if (pct >= amberAt) return fg(C.gaugeMid);
-  return fg(C.gaugeLo);
+  if (pct >= redAt) return fg(colors.gaugeHi);
+  if (pct >= amberAt) return fg(colors.gaugeMid);
+  return fg(colors.gaugeLo);
 }
 
 function renderGauge(pct) {
   const n = num(pct);
-  if (n === null) return '·'.repeat(10);
+  if (n === null) return '·'.repeat(GAUGE_CELLS);
 
-  let bounded = Math.round(n);
-  if (bounded > 100) bounded = 100;
-  if (bounded < 0) bounded = 0;
+  const bounded = clampPercent(n);
+  const filled = Math.floor((bounded / 100) * GAUGE_CELLS);
+  const empty = GAUGE_CELLS - filled;
 
-  const filled = Math.floor(bounded / 10);
-  const empty = 10 - filled;
-
-  const track = useColor ? fg(C.track) : '';
+  const track = useColor ? fg(colors.track) : '';
   const emptyCell = useColor ? '█' : '░';
   return percentColor(bounded) + '█'.repeat(filled) + track + emptyCell.repeat(empty);
 }
 
-// ── Read stdin ────────────────────────────────────────────────
-
-let payload = '';
-try {
-  payload = fs.readFileSync(0, 'utf8');
-} catch {
-  payload = '';
-}
-
-if (debug && payload) {
-  const logLine = `${new Date().toISOString()} | LEN=${payload.length} | ${payload}\n`;
-  try {
-    fs.appendFileSync(path.join(os.tmpdir(), 'statusline-debug.log'), logLine);
-  } catch {
-    /* best effort */
-  }
-}
-
 function bail(message) {
-  process.stdout.write(`${fg(C.agent)}⊘ ${message}${rst()}`);
+  process.stdout.write(`${fg(colors.agent)}⊘ ${message}${rst()}`);
   process.exit(0);
 }
 
-if (!payload.trim()) bail('Agent status unavailable');
-
-let data;
-try {
-  data = JSON.parse(payload);
-} catch {
-  bail('Invalid payload');
+function readPayload() {
+  let payload = '';
+  try {
+    payload = fs.readFileSync(STDIN_FD, 'utf8');
+  } catch {
+    payload = '';
+  }
+  if (debug && payload) {
+    const logLine = `${new Date().toISOString()} | LEN=${payload.length} | ${payload}\n`;
+    try {
+      fs.appendFileSync(path.join(os.tmpdir(), 'statusline-debug.log'), logLine);
+    } catch {
+      /* best effort */
+    }
+  }
+  if (!payload.trim()) bail('Agent status unavailable');
+  try {
+    return JSON.parse(payload);
+  } catch {
+    return bail('Invalid payload');
+  }
 }
 
-// ── Path probing ──────────────────────────────────────────────
-
-function get(obj, dottedPath) {
+function getPath(obj, dottedPath) {
   return dottedPath.split('.').reduce((acc, key) => {
     if (acc === null || acc === undefined) return undefined;
     return acc[key];
   }, obj);
 }
 
-function first(...paths) {
-  for (const p of paths) {
-    const v = get(data, p);
-    if (v !== null && v !== undefined && v !== '') return v;
-  }
-  return null;
-}
-
-function has(...paths) {
-  return paths.some((p) => {
-    const v = get(data, p);
-    return v !== null && v !== undefined;
-  });
-}
-
-// ── Auto-detect adapter ───────────────────────────────────────
 // Copilot must be tested first: its payload now also carries the
 // Claude-style context_window.{context_window_size,used_percentage},
 // but the display-view fields below are exclusive to Copilot.
-
-if (adapter === 'auto') {
+function detectAdapter(data) {
+  const has = (...paths) =>
+    paths.some((p) => {
+      const v = getPath(data, p);
+      return v !== null && v !== undefined;
+    });
   if (
     has(
       'context_window.current_context_tokens',
@@ -398,8 +381,9 @@ if (adapter === 'auto') {
       'context_window.current_context_used_percentage'
     )
   ) {
-    adapter = 'copilot';
-  } else if (
+    return 'copilot';
+  }
+  if (
     has(
       'context_window.used_percentage',
       'context_window.context_window_size',
@@ -409,98 +393,104 @@ if (adapter === 'auto') {
       'exceeds_200k_tokens'
     )
   ) {
-    adapter = 'claude-code';
-  } else {
-    adapter = 'generic';
+    return 'claude-code';
   }
+  return 'generic';
 }
 
-// ── Adapter: normalize JSON → variables ──────────────────────
+function normalize(adapter, data) {
+  const read = (...paths) => {
+    for (const p of paths) {
+      const v = getPath(data, p);
+      if (v !== null && v !== undefined && v !== '') return v;
+    }
+    return null;
+  };
 
-const sl = {
-  agentName: 'Agent',
-  model: null,
-  cwd: null,
-  ctxCurrent: null,
-  ctxLimit: null,
-  ctxPct: null,
-  durationMs: null,
-  linesAdded: 0,
-  linesRemoved: 0,
-};
+  const session = {
+    agentName: 'Agent',
+    model: null,
+    cwd: null,
+    ctxCurrent: null,
+    ctxLimit: null,
+    ctxPct: null,
+    durationMs: null,
+    linesAdded: 0,
+    linesRemoved: 0,
+  };
 
-switch (adapter) {
-  case 'copilot':
-    sl.agentName = 'Copilot';
-    sl.model = first('model.id', 'model.display_name');
-    sl.cwd = first('cwd', 'workspace.current_dir');
-    sl.ctxCurrent = first('context_window.current_context_tokens');
-    sl.ctxLimit = first('context_window.displayed_context_limit');
-    sl.ctxPct = first('context_window.current_context_used_percentage');
-    sl.durationMs = first('cost.total_duration_ms');
-    sl.linesAdded = first('cost.total_lines_added') ?? 0;
-    sl.linesRemoved = first('cost.total_lines_removed') ?? 0;
-    break;
+  switch (adapter) {
+    case 'copilot':
+      session.agentName = 'Copilot';
+      session.model = read('model.id', 'model.display_name');
+      session.cwd = read('cwd', 'workspace.current_dir');
+      session.ctxCurrent = read('context_window.current_context_tokens');
+      session.ctxLimit = read('context_window.displayed_context_limit');
+      session.ctxPct = read('context_window.current_context_used_percentage');
+      session.durationMs = read('cost.total_duration_ms');
+      session.linesAdded = read('cost.total_lines_added') ?? 0;
+      session.linesRemoved = read('cost.total_lines_removed') ?? 0;
+      break;
 
-  case 'claude-code': {
-    sl.agentName = 'Claude';
-    sl.model = first('model.display_name', 'model.id');
-    sl.cwd = first('cwd', 'workspace.current_dir');
-    const inTok = num(first('context_window.total_input_tokens')) ?? 0;
-    const outTok = num(first('context_window.total_output_tokens')) ?? 0;
-    sl.ctxCurrent = inTok + outTok || null;
-    sl.ctxLimit = first('context_window.context_window_size');
-    sl.ctxPct = first('context_window.used_percentage');
-    sl.durationMs = first('cost.total_duration_ms');
-    sl.linesAdded = first('cost.total_lines_added') ?? 0;
-    sl.linesRemoved = first('cost.total_lines_removed') ?? 0;
-    break;
+    case 'claude-code': {
+      session.agentName = 'Claude';
+      session.model = read('model.display_name', 'model.id');
+      session.cwd = read('cwd', 'workspace.current_dir');
+      const inTok = num(read('context_window.total_input_tokens')) ?? 0;
+      const outTok = num(read('context_window.total_output_tokens')) ?? 0;
+      session.ctxCurrent = inTok + outTok || null;
+      session.ctxLimit = read('context_window.context_window_size');
+      session.ctxPct = read('context_window.used_percentage');
+      session.durationMs = read('cost.total_duration_ms');
+      session.linesAdded = read('cost.total_lines_added') ?? 0;
+      session.linesRemoved = read('cost.total_lines_removed') ?? 0;
+      break;
+    }
+
+    default:
+      session.agentName = 'Agent';
+      session.model = read('model.display_name', 'model.id', 'model');
+      session.cwd = read('cwd', 'workspace.current_dir');
+      session.ctxCurrent = read(
+        'context_window.current_context_tokens',
+        'context_window.total_input_tokens',
+        'context.tokens_used',
+        'tokens_used'
+      );
+      session.ctxLimit = read(
+        'context_window.displayed_context_limit',
+        'context_window.context_window_size',
+        'context.tokens_limit',
+        'tokens_limit'
+      );
+      session.ctxPct = read(
+        'context_window.current_context_used_percentage',
+        'context_window.used_percentage',
+        'context.pct'
+      );
+      session.durationMs = read('cost.total_duration_ms', 'cost.duration_ms', 'duration_ms');
+      session.linesAdded = read('cost.total_lines_added', 'cost.lines_added', 'lines_added') ?? 0;
+      session.linesRemoved =
+        read('cost.total_lines_removed', 'cost.lines_removed', 'lines_removed') ?? 0;
+      break;
   }
 
-  default:
-    sl.agentName = 'Agent';
-    sl.model = first('model.display_name', 'model.id', 'model');
-    sl.cwd = first('cwd', 'workspace.current_dir');
-    sl.ctxCurrent = first(
-      'context_window.current_context_tokens',
-      'context_window.total_input_tokens',
-      'context.tokens_used',
-      'tokens_used'
-    );
-    sl.ctxLimit = first(
-      'context_window.displayed_context_limit',
-      'context_window.context_window_size',
-      'context.tokens_limit',
-      'tokens_limit'
-    );
-    sl.ctxPct = first(
-      'context_window.current_context_used_percentage',
-      'context_window.used_percentage',
-      'context.pct'
-    );
-    sl.durationMs = first('cost.total_duration_ms', 'cost.duration_ms', 'duration_ms');
-    sl.linesAdded =
-      first('cost.total_lines_added', 'cost.lines_added', 'lines_added') ?? 0;
-    sl.linesRemoved =
-      first('cost.total_lines_removed', 'cost.lines_removed', 'lines_removed') ?? 0;
-    break;
+  session.limits = [
+    { label: '5h', window: 'five_hour' },
+    { label: 'wk', window: 'seven_day' },
+  ]
+    .map((w) => ({
+      label: w.label,
+      usedPct: num(read(`rate_limits.${w.window}.used_percentage`)),
+      resetsAt: read(`rate_limits.${w.window}.resets_at`),
+    }))
+    .filter((w) => w.usedPct !== null);
+
+  return session;
 }
 
-sl.limits = [
-  { label: '5h', window: 'five_hour' },
-  { label: 'wk', window: 'seven_day' },
-]
-  .map((w) => ({
-    label: w.label,
-    usedPct: num(first(`rate_limits.${w.window}.used_percentage`)),
-    resetsAt: first(`rate_limits.${w.window}.resets_at`),
-  }))
-  .filter((w) => w.usedPct !== null);
-
-// ── Resolve git branch from cwd ───────────────────────────────
-
-let gitBranch = '';
-let gitDirty = '';
+const MAX_BRANCH_LEN = 32;
+const BRANCH_KEEP = 12; // chars kept from each end when eliding a long branch
 
 function git(args, cwd) {
   try {
@@ -514,28 +504,27 @@ function git(args, cwd) {
   }
 }
 
-if (segments.gitBranch && sl.cwd && fs.existsSync(sl.cwd) && fs.statSync(sl.cwd).isDirectory()) {
-  gitBranch =
-    git(['symbolic-ref', '--short', 'HEAD'], sl.cwd) ||
-    git(['rev-parse', '--short', 'HEAD'], sl.cwd);
-
-  if (gitBranch) {
-    if (gitBranch.length > 32) {
-      gitBranch = `${gitBranch.slice(0, 12)}…${gitBranch.slice(-12)}`;
-    }
-    const status = git(['status', '--porcelain'], sl.cwd);
-    if (status) gitDirty = '!';
+function resolveGit(cwd) {
+  if (!segments.gitBranch || !cwd || !fs.existsSync(cwd) || !fs.statSync(cwd).isDirectory()) {
+    return { branch: '', dirty: '' };
   }
+  let branch =
+    git(['symbolic-ref', '--short', 'HEAD'], cwd) || git(['rev-parse', '--short', 'HEAD'], cwd);
+  if (!branch) return { branch: '', dirty: '' };
+  if (branch.length > MAX_BRANCH_LEN) {
+    branch = `${branch.slice(0, BRANCH_KEEP)}…${branch.slice(-BRANCH_KEEP)}`;
+  }
+  const dirty = git(['status', '--porcelain'], cwd) ? '!' : '';
+  return { branch, dirty };
 }
 
-// ── Custom env-var segments ───────────────────────────────────
-
+const MAX_CUSTOM_LABEL = 12;
 const customSegmentsEnv = env.STATUSLINE_CUSTOM_SEGMENTS ?? '';
 const customSegmentsFile =
   env.STATUSLINE_CUSTOM_SEGMENTS_FILE ??
   path.join(os.homedir(), '.config', 'agent-statusline', 'segments.conf');
 
-function renderCustomSegments() {
+function loadCustomDefs() {
   let defs = customSegmentsEnv;
   if (fs.existsSync(customSegmentsFile)) {
     try {
@@ -547,90 +536,98 @@ function renderCustomSegments() {
       /* ignore unreadable config */
     }
   }
+  return defs;
+}
+
+function renderCustomSegments() {
   const result = [];
+  const defs = loadCustomDefs();
   if (!defs) return result;
   for (let segment of defs.split(',')) {
     segment = segment.trim();
     if (!segment) continue;
-    const p = segment.split(':');
-    const varName = (p[0] ?? '').trim();
-    let label = (p[1] ?? '').trim();
-    const color = num((p[2] ?? '').trim()) ?? C.model;
+    const parts = segment.split(':');
+    const varName = (parts[0] ?? '').trim();
+    let label = (parts[1] ?? '').trim();
+    const color = num((parts[2] ?? '').trim()) ?? colors.model;
     if (!varName) continue;
     const value = env[varName];
     if (!value) continue;
     if (!label) {
-      label = varName.toLowerCase();
-      if (label.length > 12) label = label.slice(0, 12);
+      label = varName.toLowerCase().slice(0, MAX_CUSTOM_LABEL);
     }
-    result.push(`${fg(C.ctxLabel)} ${label} ${fg(color)}${value} `);
+    result.push(`${fg(colors.ctxLabel)} ${label} ${fg(color)}${value} `);
   }
   return result;
 }
 
-// ── Render ────────────────────────────────────────────────────
-// The bar is a head (agent name) plus a list of segment strings, each
-// joined with the divider. Disabled or empty segments never enter the
-// list, so they take their divider with them.
+// The bar is a head (agent name) plus a list of segment strings joined by the
+// divider. Disabled or empty segments never enter the list, so they take their
+// divider with them.
+function buildBar(session, gitInfo) {
+  const fmtCtxCurrent = formatTokens(session.ctxCurrent);
+  const fmtCtxLimit = formatTokens(session.ctxLimit);
+  const fmtDuration = formatDuration(session.durationMs);
 
-const fmtCtxCurrent = formatTokens(sl.ctxCurrent);
-const fmtCtxLimit = formatTokens(sl.ctxLimit);
-const fmtDuration = formatDuration(sl.durationMs);
+  let out = '';
+  if (useColor) out += bg(colors.bg);
 
-let out = '';
-if (useColor) out += bg(C.bg);
+  out += `${fg(colors.agent)} ${session.agentName}`;
+  if (segments.model && session.model) out += `${fg(colors.model)} ${session.model}`;
+  out += ' ';
 
-out += `${fg(C.agent)} ${sl.agentName}`;
-if (segments.model && sl.model) out += `${fg(C.model)} ${sl.model}`;
-out += ' ';
+  const loading =
+    session.ctxLimit === null || ((num(session.ctxCurrent) ?? 0) === 0 && !session.model);
 
-const loading = sl.ctxLimit === null || ((num(sl.ctxCurrent) ?? 0) === 0 && !sl.model);
+  if (loading) {
+    out += DIV;
+    out += `${fg(colors.ctxLabel)} waiting for first exchange ${fg(colors.time)}… `;
+    return out + rst();
+  }
 
-if (loading) {
-  out += DIV;
-  out += `${fg(C.ctxLabel)} waiting for first exchange ${fg(C.time)}… `;
-} else {
   const parts = [];
 
-  if (segments.gitBranch && gitBranch) {
+  if (segments.gitBranch && gitInfo.branch) {
     parts.push(
-      gitDirty
-        ? `${fg(C.branchDirty)} ${gitBranch} ${gitDirty} `
-        : `${fg(C.branch)} ${gitBranch} `
+      gitInfo.dirty
+        ? `${fg(colors.branchDirty)} ${gitInfo.branch} ${gitInfo.dirty} `
+        : `${fg(colors.branch)} ${gitInfo.branch} `
     );
   }
 
   if (segments.context) {
     parts.push(
-      `${fg(C.ctxLabel)} ctx ${fg(C.ctx)}${fmtCtxCurrent}${fg(C.ctxLabel)}/${fg(C.ctx)}${fmtCtxLimit} `
+      `${fg(colors.ctxLabel)} ctx ${fg(colors.ctx)}${fmtCtxCurrent}${fg(colors.ctxLabel)}/${fg(colors.ctx)}${fmtCtxLimit} `
     );
   }
 
   if (segments.gauge) {
-    parts.push(` ${renderGauge(sl.ctxPct)} `);
+    parts.push(` ${renderGauge(session.ctxPct)} `);
   }
 
   if (segments.duration) {
-    parts.push(`${fg(C.time)} ${fmtDuration} `);
+    parts.push(`${fg(colors.time)} ${fmtDuration} `);
   }
 
-  if (segments.limits && sl.limits.length) {
-    const lim = sl.limits.map((w) => {
-      const used = Math.min(100, Math.max(0, Math.round(w.usedPct)));
+  if (segments.limits && session.limits.length) {
+    const lim = session.limits.map((w) => {
+      const used = clampPercent(w.usedPct);
       const reset = formatReset(w.resetsAt);
       return (
-        `${fg(C.ctxLabel)}${w.label} ${percentColor(used)}${used}%` +
-        (reset ? `${fg(C.time)} (${reset})` : '')
+        `${fg(colors.ctxLabel)}${w.label} ${percentColor(used)}${used}%` +
+        (reset ? `${fg(colors.time)} (${reset})` : '')
       );
     });
-    parts.push(` ${lim.join(`${fg(C.subsep)} · `)} `);
+    parts.push(` ${lim.join(`${fg(colors.subsep)} · `)} `);
   }
 
   if (
     segments.lines &&
-    (String(sl.linesAdded) !== '0' || String(sl.linesRemoved) !== '0')
+    (String(session.linesAdded) !== '0' || String(session.linesRemoved) !== '0')
   ) {
-    parts.push(`${fg(C.add)} +${sl.linesAdded}${fg(C.diff)}/${fg(C.del)}-${sl.linesRemoved} `);
+    parts.push(
+      `${fg(colors.add)} +${session.linesAdded}${fg(colors.diff)}/${fg(colors.del)}-${session.linesRemoved} `
+    );
   }
 
   if (segments.custom) {
@@ -638,8 +635,15 @@ if (loading) {
   }
 
   for (const p of parts) out += DIV + p;
+  return out + rst();
 }
 
-out += rst();
+function main() {
+  const data = readPayload();
+  const adapter = adapterOverride === 'auto' ? detectAdapter(data) : adapterOverride;
+  const session = normalize(adapter, data);
+  const gitInfo = resolveGit(session.cwd);
+  process.stdout.write(buildBar(session, gitInfo));
+}
 
-process.stdout.write(out);
+main();

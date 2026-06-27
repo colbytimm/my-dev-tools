@@ -9,6 +9,14 @@ import { execFileSync } from 'node:child_process';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import {
+  parseAnsiRuns,
+  emitRunGlyphs,
+  xmlEscape,
+  CHAR_WIDTH_EM,
+  BASELINE_EM,
+  DEFAULT_PAGE_BG,
+} from './ansi-svg.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..', '..');
@@ -69,7 +77,7 @@ const rows = [
 
 // ── ANSI → SVG row ────────────────────────────────────────────
 const FS = 15;
-const CW = FS * 0.56;
+const CW = FS * CHAR_WIDTH_EM;
 const ROWH = 28;
 const PITCH = ROWH + 8;
 const HEADER = 30;
@@ -77,91 +85,17 @@ const GUTTER = 116;
 const PADX = 16;
 const PADTOP = 14;
 
-const hex = (r, g, b) => `#${[r, g, b].map((v) => (v & 255).toString(16).padStart(2, '0')).join('')}`;
-const BASIC = [
-  '000000', '800000', '008000', '808000', '000080', '800080', '008080', 'c0c0c0',
-  '808080', 'ff0000', '00ff00', 'ffff00', '0000ff', 'ff00ff', '00ffff', 'ffffff',
-];
-const CUBE = [0, 95, 135, 175, 215, 255];
-function color256(n) {
-  if (n < 16) return `#${BASIC[n]}`;
-  if (n < 232) {
-    const i = n - 16;
-    return hex(CUBE[Math.floor(i / 36) % 6], CUBE[Math.floor(i / 6) % 6], CUBE[i % 6]);
-  }
-  const v = 8 + (n - 232) * 10;
-  return hex(v, v, v);
-}
-const xmlEscape = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
 function parseRow(ansi, x0, y0) {
-  let fg = '#cccccc';
-  let bgc = null;
-  const runs = [];
-  let buf = '';
-  let cols = 0;
-  const flush = () => {
-    if (buf) runs.push({ text: buf, fg, bg: bgc, col: cols - buf.length });
-    buf = '';
+  const { runs, cols } = parseAnsiRuns(ansi);
+  const { shapes, tspans } = emitRunGlyphs(runs, { x0, yTop: y0, rowHeight: ROWH, cw: CW, fontSize: FS });
+  const baseline = y0 + ROWH / 2 + FS * BASELINE_EM;
+  const bg = runs.find((r) => r.bg)?.bg ?? DEFAULT_PAGE_BG;
+  return {
+    bg,
+    contentWidth: cols * CW,
+    frag: shapes,
+    text: `<text y="${baseline.toFixed(1)}" xml:space="preserve">${tspans}</text>`,
   };
-  const re = /\x1b\[([0-9;]*)m/g;
-  let last = 0;
-  let m;
-  const push = (t) => {
-    for (const ch of t) {
-      buf += ch;
-      cols += 1;
-    }
-  };
-  while ((m = re.exec(ansi))) {
-    push(ansi.slice(last, m.index));
-    flush();
-    const c = m[1].split(';').map(Number);
-    for (let i = 0; i < c.length; i++) {
-      if (c[i] === 0) {
-        fg = '#cccccc';
-        bgc = null;
-      } else if (c[i] === 38 && c[i + 1] === 5) {
-        fg = color256(c[i + 2]);
-        i += 2;
-      } else if (c[i] === 48 && c[i + 1] === 5) {
-        bgc = color256(c[i + 2]);
-        i += 2;
-      } else if (c[i] === 38 && c[i + 1] === 2) {
-        fg = hex(c[i + 2], c[i + 3], c[i + 4]);
-        i += 4;
-      } else if (c[i] === 48 && c[i + 1] === 2) {
-        bgc = hex(c[i + 2], c[i + 3], c[i + 4]);
-        i += 4;
-      }
-    }
-    last = re.lastIndex;
-  }
-  push(ansi.slice(last));
-  flush();
-
-  const mid = y0 + ROWH / 2;
-  const top = mid - FS * 0.7;
-  const bot = mid + FS * 0.7;
-  const baseline = mid + FS * 0.35;
-  let frag = '';
-  let texts = '';
-  for (const r of runs) {
-    for (let i = 0; i < r.text.length; i++) {
-      const cp = r.text.codePointAt(i);
-      const x = x0 + (r.col + i) * CW;
-      if (cp === 0xe0b0) {
-        frag += `<polygon points="${x.toFixed(1)},${y0} ${(x + CW).toFixed(1)},${mid.toFixed(1)} ${x.toFixed(1)},${(y0 + ROWH).toFixed(1)}" fill="${r.fg}"/>`;
-      } else if (cp === 0xe0b1) {
-        frag += `<polyline points="${(x + 2).toFixed(1)},${top.toFixed(1)} ${(x + CW - 2).toFixed(1)},${mid.toFixed(1)} ${(x + 2).toFixed(1)},${bot.toFixed(1)}" fill="none" stroke="${r.fg}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>`;
-      } else {
-        texts += `<tspan x="${x.toFixed(1)}" fill="${r.fg}">${xmlEscape(r.text[i])}</tspan>`;
-      }
-    }
-  }
-  const bg = runs.find((r) => r.bg)?.bg ?? '#1d1f21';
-  const contentWidth = cols * CW;
-  return { bg, contentWidth, frag, text: `<text y="${baseline.toFixed(1)}" xml:space="preserve">${texts}</text>` };
 }
 
 // ── layout ────────────────────────────────────────────────────

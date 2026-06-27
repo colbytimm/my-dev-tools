@@ -13,6 +13,14 @@ import { execFileSync } from 'node:child_process';
 import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import {
+  parseAnsiRuns,
+  emitRunGlyphs,
+  xmlEscape,
+  CHAR_WIDTH_EM,
+  BASELINE_EM,
+  DEFAULT_PAGE_BG,
+} from './ansi-svg.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..', '..');
@@ -83,111 +91,30 @@ const copilot = {
 };
 
 // ── ANSI → SVG ────────────────────────────────────────────────
-const BASIC = [
-  '000000', '800000', '008000', '808000', '000080', '800080', '008080', 'c0c0c0',
-  '808080', 'ff0000', '00ff00', 'ffff00', '0000ff', 'ff00ff', '00ffff', 'ffffff',
-];
-const CUBE = [0, 95, 135, 175, 215, 255];
-const hex = (r, g, b) => `#${[r, g, b].map((v) => (v & 255).toString(16).padStart(2, '0')).join('')}`;
-function color256(n) {
-  if (n < 16) return `#${BASIC[n]}`;
-  if (n < 232) {
-    const i = n - 16;
-    return hex(CUBE[Math.floor(i / 36) % 6], CUBE[Math.floor(i / 6) % 6], CUBE[i % 6]);
-  }
-  const v = 8 + (n - 232) * 10;
-  return hex(v, v, v);
-}
-const xmlEscape = (s) =>
-  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const PAD = 8; // left/right inner padding around the bar
 
 function ansiToSvg(ansi) {
   const fontSize = CFG.font.size;
-  const cw = fontSize * 0.56;
-  let fg = '#cccccc';
-  let bg = null;
-  const runs = [];
-  let buf = '';
-  let cols = 0;
-  const flush = () => {
-    if (buf) runs.push({ text: buf, fg, bg, col: cols - buf.length });
-    buf = '';
-  };
-  const re = /\x1b\[([0-9;]*)m/g;
-  let last = 0;
-  let m;
-  const pushText = (t) => {
-    for (const ch of t) {
-      buf += ch;
-      cols += 1;
-    }
-  };
-  while ((m = re.exec(ansi))) {
-    pushText(ansi.slice(last, m.index));
-    flush();
-    const codes = m[1].split(';').map(Number);
-    for (let i = 0; i < codes.length; i++) {
-      if (codes[i] === 0) {
-        fg = '#cccccc';
-        bg = null;
-      } else if (codes[i] === 38 && codes[i + 1] === 5) {
-        fg = color256(codes[i + 2]);
-        i += 2;
-      } else if (codes[i] === 48 && codes[i + 1] === 5) {
-        bg = color256(codes[i + 2]);
-        i += 2;
-      } else if (codes[i] === 38 && codes[i + 1] === 2) {
-        fg = hex(codes[i + 2], codes[i + 3], codes[i + 4]);
-        i += 4;
-      } else if (codes[i] === 48 && codes[i + 1] === 2) {
-        bg = hex(codes[i + 2], codes[i + 3], codes[i + 4]);
-        i += 4;
-      }
-    }
-    last = re.lastIndex;
-  }
-  pushText(ansi.slice(last));
-  flush();
+  const cw = fontSize * CHAR_WIDTH_EM;
+  const { runs, cols } = parseAnsiRuns(ansi);
 
-  const width = Math.ceil(cols * cw) + 16;
+  const width = Math.ceil(cols * cw) + PAD * 2;
   const height = Math.ceil(fontSize * 2);
-  const mid = height / 2;
-  const top = mid - fontSize * 0.7;
-  const bot = mid + fontSize * 0.7;
-  const pageBg = runs.find((r) => r.bg)?.bg ?? '#1d1f21';
+  const pageBg = runs.find((r) => r.bg)?.bg ?? DEFAULT_PAGE_BG;
   const rects = runs
     .filter((r) => r.bg)
     .map(
       (r) =>
-        `<rect x="${(8 + r.col * cw).toFixed(1)}" y="0" width="${(r.text.length * cw).toFixed(1)}" height="${height}" fill="${r.bg}"/>`
+        `<rect x="${(PAD + r.col * cw).toFixed(1)}" y="0" width="${(r.text.length * cw).toFixed(1)}" height="${height}" fill="${r.bg}"/>`
     )
     .join('');
 
-  // Powerline separators (PUA) are drawn as vector shapes so they render
-  // without a patched font: E0B0 a filled tail, E0B1 a thin chevron.
-  const shapes = [];
-  let texts = '';
-  for (const r of runs) {
-    for (let i = 0; i < r.text.length; i++) {
-      const cp = r.text.codePointAt(i);
-      const x = 8 + (r.col + i) * cw;
-      if (cp === 0xe0b0) {
-        shapes.push(
-          `<polygon points="${x.toFixed(1)},0 ${(x + cw).toFixed(1)},${mid.toFixed(1)} ${x.toFixed(1)},${height}" fill="${r.fg}"/>`
-        );
-      } else if (cp === 0xe0b1) {
-        shapes.push(
-          `<polyline points="${(x + 2).toFixed(1)},${top.toFixed(1)} ${(x + cw - 2).toFixed(1)},${mid.toFixed(1)} ${(x + 2).toFixed(1)},${bot.toFixed(1)}" fill="none" stroke="${r.fg}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>`
-        );
-      } else {
-        texts += `<tspan x="${x.toFixed(1)}" fill="${r.fg}">${xmlEscape(r.text[i])}</tspan>`;
-      }
-    }
-  }
+  const { shapes, tspans } = emitRunGlyphs(runs, { x0: PAD, yTop: 0, rowHeight: height, cw, fontSize });
+  const baseline = height / 2 + fontSize * BASELINE_EM;
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" font-family="${xmlEscape(CFG.font.family)}" font-weight="${CFG.font.weight}" font-size="${fontSize}">` +
-    `<rect width="100%" height="100%" fill="${pageBg}"/>${rects}${shapes.join('')}` +
-    `<text y="${(mid + fontSize * 0.35).toFixed(1)}" xml:space="preserve">${texts}</text></svg>`
+    `<rect width="100%" height="100%" fill="${pageBg}"/>${rects}${shapes}` +
+    `<text y="${baseline.toFixed(1)}" xml:space="preserve">${tspans}</text></svg>`
   );
 }
 
