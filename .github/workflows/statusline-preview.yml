@@ -1,0 +1,52 @@
+name: Statusline preview
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'agents/skills/env/statusline-install/**'
+      - '.github/scripts/statusline-preview.mjs'
+      - '.github/workflows/statusline-preview.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: statusline-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Render (Claude + Copilot, all modes)
+        run: node .github/scripts/statusline-preview.mjs
+
+      - name: Render via PowerShell (stdin pipe)
+        shell: pwsh
+        run: |
+          $payload = '{"model":{"display_name":"Opus"},"cwd":".","context_window":{"total_input_tokens":85000,"context_window_size":1000000,"used_percentage":26},"cost":{"total_duration_ms":3000},"rate_limits":{"five_hour":{"used_percentage":13,"resets_at":9999999999}}}'
+          $out = $payload | node agents/skills/env/statusline-install/scripts/statusline.js --no-color
+          Write-Host "PowerShell render: $out"
+          if (-not $out.Contains('Claude') -or -not $out.Contains('5h 13%')) {
+            Write-Error 'PowerShell statusline render missing expected segments'
+            exit 1
+          }
+
+      - name: Upload SVG snapshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: statusline-preview-${{ matrix.os }}
+          path: statusline-preview/
+          if-no-files-found: warn
