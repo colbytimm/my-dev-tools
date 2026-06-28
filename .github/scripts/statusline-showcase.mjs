@@ -30,6 +30,7 @@ const now = Math.floor(Date.now() / 1000);
 
 const claude = (used, fiveH, sevenD) => ({
   model: { display_name: 'Opus 4.8' },
+  effort: { level: 'high' },
   cwd: root,
   context_window: {
     total_input_tokens: Math.round((used / 100) * 1_000_000),
