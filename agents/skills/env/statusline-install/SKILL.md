@@ -76,7 +76,7 @@ command-backed statusline, the `generic` adapter will pick it up.
 {
   "statusLine": {
     "type": "command",
-    "command": "node ~/.claude/skills/statusline/scripts/statusline.js",
+    "command": "node ~/.claude/skills/statusline-install/scripts/statusline.js",
     "padding": 0
   }
 }
@@ -88,7 +88,7 @@ command-backed statusline, the `generic` adapter will pick it up.
 {
   "statusLine": {
     "type": "command",
-    "command": "node ~/.copilot/skills/statusline/scripts/statusline.js"
+    "command": "node ~/.copilot/skills/statusline-install/scripts/statusline.js"
   }
 }
 ```
@@ -100,7 +100,7 @@ Both agents run the command through Git Bash (if installed) or PowerShell;
 expand:
 
 ```json
-{ "statusLine": { "type": "command", "command": "node C:/Users/you/.claude/skills/statusline/scripts/statusline.js" } }
+{ "statusLine": { "type": "command", "command": "node C:/Users/you/.claude/skills/statusline-install/scripts/statusline.js" } }
 ```
 
 `node` and `git` must be on `PATH`.
@@ -130,7 +130,7 @@ dangling separators). Defaults live in the `SEGMENTS` object; override one with
 
 | Segment | Env override | Shows |
 | --- | --- | --- |
-| `model` | `STATUSLINE_SHOW_MODEL` | model name after the agent |
+| `model` | `STATUSLINE_SHOW_MODEL` | model name after the agent, plus the reasoning effort in brackets (e.g. `Opus 4.8 [high]`) when the agent reports it |
 | `gitBranch` | `STATUSLINE_SHOW_GITBRANCH` | git branch + dirty marker |
 | `context` | `STATUSLINE_SHOW_CONTEXT` | ctx tokens used / limit |
 | `gauge` | `STATUSLINE_SHOW_GAUGE` | context-window fill gauge |
@@ -224,6 +224,7 @@ counter), so a "usage left" segment can't be computed for it from stdin alone.
 | `--no-color` / `STATUSLINE_USE_COLOR=false` | Plain output with `│` separators, no color     |
 | `--powerline` / `--no-powerline` (`--plain`) | Force powerline glyphs on/off (default auto by `TERM_PROGRAM`) |
 | `STATUSLINE_POWERLINE=auto\|true\|false`    | Same as above via env; `auto` degrades on Apple Terminal / VS Code |
+| `STATUSLINE_BRANCH=<name>`                  | Override the git branch label (for screenshots/demos); dirty marker still reflects `cwd` |
 | `--debug` / `STATUSLINE_DEBUG=true`         | Log raw payloads to `$TMPDIR/statusline-debug.log` |
 | `--dump-config`                             | Print resolved theme, colors, segments, and font as JSON |
 

@@ -387,6 +387,7 @@ function normalize(adapter, data) {
   const session = {
     agentName: 'Agent',
     model: null,
+    effort: null,
     cwd: null,
     ctxCurrent: null,
     ctxLimit: null,
@@ -412,10 +413,11 @@ function normalize(adapter, data) {
     case 'claude-code': {
       session.agentName = 'Claude';
       session.model = read('model.display_name', 'model.id');
+      session.effort = read('effort.level');
       session.cwd = read('cwd', 'workspace.current_dir');
       const inTok = num(read('context_window.total_input_tokens')) ?? 0;
       const outTok = num(read('context_window.total_output_tokens')) ?? 0;
-      session.ctxCurrent = inTok + outTok || null;
+      session.ctxCurrent = inTok + outTok;
       session.ctxLimit = read('context_window.context_window_size');
       session.ctxPct = read('context_window.used_percentage');
       session.durationMs = read('cost.total_duration_ms');
@@ -427,6 +429,7 @@ function normalize(adapter, data) {
     default:
       session.agentName = 'Agent';
       session.model = read('model.display_name', 'model.id', 'model');
+      session.effort = read('effort.level', 'reasoning_effort', 'effort');
       session.cwd = read('cwd', 'workspace.current_dir');
       session.ctxCurrent = read(
         'context_window.current_context_tokens',
@@ -450,6 +453,12 @@ function normalize(adapter, data) {
       session.linesRemoved =
         read('cost.total_lines_removed', 'cost.lines_removed', 'lines_removed') ?? 0;
       break;
+  }
+
+  if (session.ctxPct === null && session.ctxLimit !== null && session.ctxCurrent !== null) {
+    const lim = num(session.ctxLimit);
+    const cur = num(session.ctxCurrent);
+    if (lim) session.ctxPct = (cur / lim) * 100;
   }
 
   session.limits = [
@@ -482,16 +491,19 @@ function git(args, cwd) {
 }
 
 function resolveGit(cwd) {
-  if (!segments.gitBranch || !cwd || !fs.existsSync(cwd) || !fs.statSync(cwd).isDirectory()) {
-    return { branch: '', dirty: '' };
-  }
+  if (!segments.gitBranch) return { branch: '', dirty: '' };
+  const validCwd = cwd && fs.existsSync(cwd) && fs.statSync(cwd).isDirectory();
+  const override = (env.STATUSLINE_BRANCH ?? '').trim();
   let branch =
-    git(['symbolic-ref', '--short', 'HEAD'], cwd) || git(['rev-parse', '--short', 'HEAD'], cwd);
+    override ||
+    (validCwd
+      ? git(['symbolic-ref', '--short', 'HEAD'], cwd) || git(['rev-parse', '--short', 'HEAD'], cwd)
+      : '');
   if (!branch) return { branch: '', dirty: '' };
   if (branch.length > MAX_BRANCH_LEN) {
     branch = `${branch.slice(0, BRANCH_KEEP)}…${branch.slice(-BRANCH_KEEP)}`;
   }
-  const dirty = git(['status', '--porcelain'], cwd) ? '!' : '';
+  const dirty = validCwd && git(['status', '--porcelain'], cwd) ? '!' : '';
   return { branch, dirty };
 }
 
@@ -550,7 +562,10 @@ function buildBar(session, gitInfo) {
   if (useColor) out += bg(colors.bg);
 
   out += `${fg(colors.agent)} ${session.agentName}`;
-  if (segments.model && session.model) out += `${fg(colors.model)} ${session.model}`;
+  if (segments.model && session.model) {
+    out += `${fg(colors.model)} ${session.model}`;
+    if (typeof session.effort === 'string' && session.effort) out += ` [${session.effort}]`;
+  }
   out += ' ';
 
   const loading =

@@ -30,6 +30,7 @@ const now = Math.floor(Date.now() / 1000);
 
 const claude = (used, fiveH, sevenD) => ({
   model: { display_name: 'Opus 4.8' },
+  effort: { level: 'high' },
   cwd: root,
   context_window: {
     total_input_tokens: Math.round((used / 100) * 1_000_000),
@@ -58,7 +59,7 @@ function render(payload, theme) {
   return execFileSync(process.execPath, [script, '--powerline'], {
     input: JSON.stringify(payload),
     encoding: 'utf8',
-    env: { ...process.env, ...extra, TERM_PROGRAM: 'ghostty' },
+    env: { ...process.env, STATUSLINE_BRANCH: 'feat/statusline', ...extra, TERM_PROGRAM: 'ghostty' },
   });
 }
 

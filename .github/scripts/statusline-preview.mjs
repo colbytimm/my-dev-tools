@@ -55,7 +55,7 @@ function render(payload, args, extraEnv = {}) {
   return execFileSync(process.execPath, [script, ...args], {
     input: JSON.stringify(payload),
     encoding: 'utf8',
-    env: { ...process.env, ...extraEnv },
+    env: { ...process.env, STATUSLINE_BRANCH: 'feat/statusline', ...extraEnv },
   });
 }
 
@@ -66,6 +66,7 @@ const chevronize = (s) => s.replace(/[\u{E0B0}\u{E0B1}]/gu, '❯');
 const now = Math.floor(Date.now() / 1000);
 const claude = (used, fiveH, sevenD) => ({
   model: { display_name: 'Opus 4.8' },
+  effort: { level: 'high' },
   cwd: process.cwd(),
   context_window: {
     total_input_tokens: Math.round((used / 100) * 1_000_000),
@@ -139,7 +140,7 @@ function emit(label, ansi, svgName) {
 // A. Adapters (cross-OS smoke)
 md += '### Adapters\n\n';
 const adapterCases = [
-  ['Claude', claude(26, 13, 64), ['Claude', 'ctx', '5h']],
+  ['Claude', claude(26, 13, 64), ['Claude', '[high]', 'ctx', '5h']],
   ['Copilot', copilot, ['Copilot', 'ctx']],
 ];
 for (const [agent, payload, expect] of adapterCases) {
