@@ -70,6 +70,22 @@ command-backed statusline, the `generic` adapter will pick it up.
 
 ## Setup
 
+This skill is **idempotent** — safe to run again to update the script or change
+config. **Before overwriting anything that already exists, confirm with the
+user; never clobber silently.** Check both before writing:
+
+- **Script** — if `~/.config/agent-statusline/statusline.js` already exists, ask
+  before replacing it (the user may have edited the in-file `CONFIG` block). On
+  yes, overwrite with the skill's copy; on no, keep theirs.
+- **Agent config** — if the target `settings.json` already has a `statusLine`
+  block, show its current `command` and ask before changing it (it may carry a
+  custom theme, padding, or command). On yes, edit **only** the `statusLine`
+  block; on no, leave it as-is.
+
+When editing a `settings.json`, read it first and rewrite only the `statusLine`
+key — preserve every other key and the file's formatting. If neither the script
+nor the block exists, this is a fresh install: proceed without prompting.
+
 ### 1. Copy the script to a stable location
 
 Install the script **outside the skill directory** and point the agent there. A
