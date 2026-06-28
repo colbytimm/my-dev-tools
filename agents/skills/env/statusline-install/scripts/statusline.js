@@ -387,6 +387,7 @@ function normalize(adapter, data) {
   const session = {
     agentName: 'Agent',
     model: null,
+    effort: null,
     cwd: null,
     ctxCurrent: null,
     ctxLimit: null,
@@ -412,6 +413,7 @@ function normalize(adapter, data) {
     case 'claude-code': {
       session.agentName = 'Claude';
       session.model = read('model.display_name', 'model.id');
+      session.effort = read('effort.level');
       session.cwd = read('cwd', 'workspace.current_dir');
       const inTok = num(read('context_window.total_input_tokens')) ?? 0;
       const outTok = num(read('context_window.total_output_tokens')) ?? 0;
@@ -427,6 +429,7 @@ function normalize(adapter, data) {
     default:
       session.agentName = 'Agent';
       session.model = read('model.display_name', 'model.id', 'model');
+      session.effort = read('effort.level', 'reasoning_effort', 'effort');
       session.cwd = read('cwd', 'workspace.current_dir');
       session.ctxCurrent = read(
         'context_window.current_context_tokens',
@@ -556,7 +559,10 @@ function buildBar(session, gitInfo) {
   if (useColor) out += bg(colors.bg);
 
   out += `${fg(colors.agent)} ${session.agentName}`;
-  if (segments.model && session.model) out += `${fg(colors.model)} ${session.model}`;
+  if (segments.model && session.model) {
+    out += `${fg(colors.model)} ${session.model}`;
+    if (typeof session.effort === 'string' && session.effort) out += ` [${session.effort}]`;
+  }
   out += ' ';
 
   const loading =

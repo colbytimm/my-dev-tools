@@ -130,7 +130,7 @@ dangling separators). Defaults live in the `SEGMENTS` object; override one with
 
 | Segment | Env override | Shows |
 | --- | --- | --- |
-| `model` | `STATUSLINE_SHOW_MODEL` | model name after the agent |
+| `model` | `STATUSLINE_SHOW_MODEL` | model name after the agent, plus the reasoning effort in brackets (e.g. `Opus 4.8 [high]`) when the agent reports it |
 | `gitBranch` | `STATUSLINE_SHOW_GITBRANCH` | git branch + dirty marker |
 | `context` | `STATUSLINE_SHOW_CONTEXT` | ctx tokens used / limit |
 | `gauge` | `STATUSLINE_SHOW_GAUGE` | context-window fill gauge |
