@@ -415,7 +415,7 @@ function normalize(adapter, data) {
       session.cwd = read('cwd', 'workspace.current_dir');
       const inTok = num(read('context_window.total_input_tokens')) ?? 0;
       const outTok = num(read('context_window.total_output_tokens')) ?? 0;
-      session.ctxCurrent = inTok + outTok || null;
+      session.ctxCurrent = inTok + outTok;
       session.ctxLimit = read('context_window.context_window_size');
       session.ctxPct = read('context_window.used_percentage');
       session.durationMs = read('cost.total_duration_ms');
@@ -450,6 +450,12 @@ function normalize(adapter, data) {
       session.linesRemoved =
         read('cost.total_lines_removed', 'cost.lines_removed', 'lines_removed') ?? 0;
       break;
+  }
+
+  if (session.ctxPct === null && session.ctxLimit !== null && session.ctxCurrent !== null) {
+    const lim = num(session.ctxLimit);
+    const cur = num(session.ctxCurrent);
+    if (lim) session.ctxPct = (cur / lim) * 100;
   }
 
   session.limits = [

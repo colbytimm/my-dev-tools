@@ -76,7 +76,7 @@ command-backed statusline, the `generic` adapter will pick it up.
 {
   "statusLine": {
     "type": "command",
-    "command": "node ~/.claude/skills/statusline/scripts/statusline.js",
+    "command": "node ~/.claude/skills/statusline-install/scripts/statusline.js",
     "padding": 0
   }
 }
@@ -88,7 +88,7 @@ command-backed statusline, the `generic` adapter will pick it up.
 {
   "statusLine": {
     "type": "command",
-    "command": "node ~/.copilot/skills/statusline/scripts/statusline.js"
+    "command": "node ~/.copilot/skills/statusline-install/scripts/statusline.js"
   }
 }
 ```
@@ -100,7 +100,7 @@ Both agents run the command through Git Bash (if installed) or PowerShell;
 expand:
 
 ```json
-{ "statusLine": { "type": "command", "command": "node C:/Users/you/.claude/skills/statusline/scripts/statusline.js" } }
+{ "statusLine": { "type": "command", "command": "node C:/Users/you/.claude/skills/statusline-install/scripts/statusline.js" } }
 ```
 
 `node` and `git` must be on `PATH`.
