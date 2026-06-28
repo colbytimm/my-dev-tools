@@ -70,25 +70,42 @@ command-backed statusline, the `generic` adapter will pick it up.
 
 ## Setup
 
-### Claude Code — `~/.claude/settings.json`
+### 1. Copy the script to a stable location
+
+Install the script **outside the skill directory** and point the agent there. A
+skill is transient — it can be uninstalled, updated, or installed at a
+project/local scope instead of globally — and any of those moves or removes
+`skills/statusline-install/`, which would break a `statusLine.command` that
+referenced the script in place. Copy it to a fixed home that does not move with
+the skill (this is also where the optional `segments.conf` lives), and a single
+copy serves every agent since the adapter is auto-detected:
+
+```sh
+mkdir -p ~/.config/agent-statusline
+cp scripts/statusline.js ~/.config/agent-statusline/statusline.js
+```
+
+### 2. Point the agent at it
+
+#### Claude Code — `~/.claude/settings.json`
 
 ```json
 {
   "statusLine": {
     "type": "command",
-    "command": "node ~/.claude/skills/statusline-install/scripts/statusline.js",
+    "command": "node ~/.config/agent-statusline/statusline.js",
     "padding": 0
   }
 }
 ```
 
-### GitHub Copilot CLI — `~/.copilot/settings.json`
+#### GitHub Copilot CLI — `~/.copilot/settings.json`
 
 ```json
 {
   "statusLine": {
     "type": "command",
-    "command": "node ~/.copilot/skills/statusline-install/scripts/statusline.js"
+    "command": "node ~/.config/agent-statusline/statusline.js"
   }
 }
 ```
@@ -96,11 +113,11 @@ command-backed statusline, the `generic` adapter will pick it up.
 ### Windows
 
 Both agents run the command through Git Bash (if installed) or PowerShell;
-`node ...` works in both. Use **forward slashes** and a full path if `~` doesn't
-expand:
+`node ...` works in both. Copy the script to a stable location there too and use
+**forward slashes** with a full path if `~` doesn't expand:
 
 ```json
-{ "statusLine": { "type": "command", "command": "node C:/Users/you/.claude/skills/statusline-install/scripts/statusline.js" } }
+{ "statusLine": { "type": "command", "command": "node C:/Users/you/.config/agent-statusline/statusline.js" } }
 ```
 
 `node` and `git` must be on `PATH`.
