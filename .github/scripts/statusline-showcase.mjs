@@ -59,7 +59,7 @@ function render(payload, theme) {
   return execFileSync(process.execPath, [script, '--powerline'], {
     input: JSON.stringify(payload),
     encoding: 'utf8',
-    env: { ...process.env, ...extra, TERM_PROGRAM: 'ghostty' },
+    env: { ...process.env, STATUSLINE_BRANCH: 'feat/statusline', ...extra, TERM_PROGRAM: 'ghostty' },
   });
 }
 

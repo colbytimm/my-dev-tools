@@ -55,7 +55,7 @@ function render(payload, args, extraEnv = {}) {
   return execFileSync(process.execPath, [script, ...args], {
     input: JSON.stringify(payload),
     encoding: 'utf8',
-    env: { ...process.env, ...extraEnv },
+    env: { ...process.env, STATUSLINE_BRANCH: 'feat/statusline', ...extraEnv },
   });
 }
 

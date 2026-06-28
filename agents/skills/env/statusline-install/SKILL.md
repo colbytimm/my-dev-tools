@@ -224,6 +224,7 @@ counter), so a "usage left" segment can't be computed for it from stdin alone.
 | `--no-color` / `STATUSLINE_USE_COLOR=false` | Plain output with `│` separators, no color     |
 | `--powerline` / `--no-powerline` (`--plain`) | Force powerline glyphs on/off (default auto by `TERM_PROGRAM`) |
 | `STATUSLINE_POWERLINE=auto\|true\|false`    | Same as above via env; `auto` degrades on Apple Terminal / VS Code |
+| `STATUSLINE_BRANCH=<name>`                  | Override the git branch label (for screenshots/demos); dirty marker still reflects `cwd` |
 | `--debug` / `STATUSLINE_DEBUG=true`         | Log raw payloads to `$TMPDIR/statusline-debug.log` |
 | `--dump-config`                             | Print resolved theme, colors, segments, and font as JSON |
 

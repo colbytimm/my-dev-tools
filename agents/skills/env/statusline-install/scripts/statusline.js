@@ -491,16 +491,19 @@ function git(args, cwd) {
 }
 
 function resolveGit(cwd) {
-  if (!segments.gitBranch || !cwd || !fs.existsSync(cwd) || !fs.statSync(cwd).isDirectory()) {
-    return { branch: '', dirty: '' };
-  }
+  if (!segments.gitBranch) return { branch: '', dirty: '' };
+  const validCwd = cwd && fs.existsSync(cwd) && fs.statSync(cwd).isDirectory();
+  const override = (env.STATUSLINE_BRANCH ?? '').trim();
   let branch =
-    git(['symbolic-ref', '--short', 'HEAD'], cwd) || git(['rev-parse', '--short', 'HEAD'], cwd);
+    override ||
+    (validCwd
+      ? git(['symbolic-ref', '--short', 'HEAD'], cwd) || git(['rev-parse', '--short', 'HEAD'], cwd)
+      : '');
   if (!branch) return { branch: '', dirty: '' };
   if (branch.length > MAX_BRANCH_LEN) {
     branch = `${branch.slice(0, BRANCH_KEEP)}…${branch.slice(-BRANCH_KEEP)}`;
   }
-  const dirty = git(['status', '--porcelain'], cwd) ? '!' : '';
+  const dirty = validCwd && git(['status', '--porcelain'], cwd) ? '!' : '';
   return { branch, dirty };
 }
 
