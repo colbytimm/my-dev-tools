@@ -124,6 +124,22 @@ function ansiToSvg(ansi) {
 let md = `## Statusline preview — ${osLabel} \`${process.platform}\`, Node ${process.version}\n\n`;
 md +=
   '> Powerline separators show as `❯` in the text previews (the summary font has no patched glyphs); the SVG artifacts draw them as real shapes.\n\n';
+
+// GitHub sanitizes the summary's Markdown — it won't interpret ANSI color or
+// inline data-URI images — so the live bars below render as plain text. Embed the
+// committed showcase SVG by raw URL (a real https source survives sanitization)
+// to give the summary a full-color reference. PR `GITHUB_SHA` is an ephemeral
+// merge commit raw.githubusercontent won't serve, so the workflow passes the head
+// SHA via PREVIEW_SHA.
+const repo = process.env.GITHUB_REPOSITORY;
+const previewSha = process.env.PREVIEW_SHA || process.env.GITHUB_SHA;
+if (repo && previewSha) {
+  const url = `https://raw.githubusercontent.com/${repo}/${previewSha}/docs/images/statusline-showcase.svg`;
+  md += `### Full-color showcase\n\n`;
+  md += `![statusline showcase](${url})\n\n`;
+  md += `_Committed reference render (same on every OS). The per-OS bars below are this run's live output — plain text, since GitHub summaries don't render ANSI color._\n\n`;
+}
+
 let failures = 0;
 
 function emit(label, ansi, svgName) {

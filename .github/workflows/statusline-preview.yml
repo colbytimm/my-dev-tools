@@ -30,6 +30,8 @@ jobs:
           node-version: '22'
 
       - name: Render (Claude + Copilot, all modes)
+        env:
+          PREVIEW_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: node .github/scripts/statusline-preview.mjs
 
       - name: Render via PowerShell (stdin pipe)
