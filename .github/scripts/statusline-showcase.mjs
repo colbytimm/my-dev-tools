@@ -52,6 +52,7 @@ const copilot = {
     current_context_used_percentage: 26,
   },
   cost: { total_duration_ms: 1_054_000, total_lines_added: 10, total_lines_removed: 4 },
+  ai_used: { formatted: '8.4', total_nano_aiu: 8_400_000_000 },
 };
 
 function render(payload, theme) {

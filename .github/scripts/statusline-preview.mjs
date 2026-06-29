@@ -89,6 +89,7 @@ const copilot = {
     current_context_used_percentage: 26,
   },
   cost: { total_duration_ms: 1_054_000, total_lines_added: 10, total_lines_removed: 4 },
+  ai_used: { formatted: '8.4', total_nano_aiu: 8_400_000_000 },
 };
 
 // ── ANSI → SVG ────────────────────────────────────────────────
@@ -141,7 +142,7 @@ function emit(label, ansi, svgName) {
 md += '### Adapters\n\n';
 const adapterCases = [
   ['Claude', claude(26, 13, 64), ['Claude', '[high]', 'ctx', '5h']],
-  ['Copilot', copilot, ['Copilot', 'ctx']],
+  ['Copilot', copilot, ['Copilot', 'ctx', '⚡8.4']],
 ];
 for (const [agent, payload, expect] of adapterCases) {
   let out;

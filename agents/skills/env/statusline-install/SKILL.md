@@ -169,6 +169,7 @@ dangling separators). Defaults live in the `SEGMENTS` object; override one with
 | `gauge` | `STATUSLINE_SHOW_GAUGE` | context-window fill gauge |
 | `duration` | `STATUSLINE_SHOW_DURATION` | elapsed session time |
 | `limits` | `STATUSLINE_SHOW_LIMITS` | Claude usage limits |
+| `credits` | `STATUSLINE_SHOW_CREDITS` | Copilot session AI credits (`⚡`) |
 | `lines` | `STATUSLINE_SHOW_LINES` | +added / -removed |
 | `custom` | `STATUSLINE_SHOW_CUSTOM` | custom env-var segments |
 
@@ -244,9 +245,12 @@ count — so the value is a percentage.
 The segment auto-hides when `rate_limits` is absent (non-subscription accounts,
 or before the first response). Disable it with `STATUSLINE_LIMITS=false`.
 
-GitHub Copilot does **not** expose an account token limit or remaining quota in
-its statusline payload (only context-window tokens and a session request
-counter), so a "usage left" segment can't be computed for it from stdin alone.
+GitHub Copilot does **not** expose an account-level quota or remaining balance in
+its statusline payload, so the Claude-style "usage left" limits segment can't be
+computed for it. It does, however, report **session** AI-credit usage —
+`ai_used.formatted` (preferred) or `ai_used.total_nano_aiu` — the same figure
+Copilot's `/usage` prints. The `credits` segment renders it as `⚡<value>` and
+auto-hides when those fields are absent (e.g. for Claude).
 
 ## Flags & environment
 
