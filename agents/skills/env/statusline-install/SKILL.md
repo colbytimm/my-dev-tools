@@ -15,86 +15,48 @@ license: MIT
 
 # Statusline
 
-A one-line, Powerlevel10k-styled status bar for terminal coding agents. The
-agent pipes session JSON to the script on stdin; the script writes a powerline
-bar to stdout.
+A one-line, Powerlevel10k-styled status bar for terminal coding agents. The agent
+pipes session JSON to the script on stdin; the script prints a powerline bar to
+stdout.
 
 ```
  Claude Opus │ feat/x ! │ ctx 86.2k/200.0k │ ████░░░░░░ │ 01:02:05 │ +156/-23 │
 ```
 
-## Pick the script
+Two scripts live in `scripts/`. **Use `statusline.js`** — it's portable (no `jq`
+or `bc`) and the only one that runs on Windows:
 
-Both live in `scripts/`. **Use `statusline.js`** — it is the portable version.
+| Script           | Platforms             | Dependencies             |
+| ---------------- | --------------------- | ------------------------ |
+| `statusline.js`  | macOS, Linux, Windows | `node` ≥ 18, `git`       |
+| `statusline.zsh` | macOS, Linux (zsh)    | `zsh`, `jq`, `bc`, `git` |
 
-| Script           | Platforms              | Dependencies             |
-| ---------------- | ---------------------- | ------------------------ |
-| `statusline.js`  | macOS, Linux, Windows  | `node` ≥ 18, `git`       |
-| `statusline.zsh` | macOS, Linux (zsh)     | `zsh`, `jq`, `bc`, `git` |
-
-`statusline.zsh` is the original, kept for reference; it won't run on Windows
-(no zsh) and uses zsh-only syntax bash can't execute.
-
-### Fonts and the powerline separators
-
-The angled separators between segments are powerline glyphs (`U+E0B0`/`U+E0B1`)
-that live in the Unicode Private Use Area and need a [powerline-patched
-font](https://github.com/romkatv/powerlevel10k#fonts). Terminals with one
-(Ghostty, iTerm2/Kitty/WezTerm with a Nerd Font, etc.) render the full bar.
-Terminals without one (notably **Apple Terminal.app**) show the separators as
-tofu (`▯`).
-
-`statusline.js` handles this: it keeps powerline glyphs by default but
-auto-degrades to a plain `│` separator (color and gauge intact) when
-`TERM_PROGRAM` is a terminal known to lack the glyphs (Apple Terminal, VS Code).
-Override with `STATUSLINE_POWERLINE=true|false` or `--powerline`/`--no-powerline`.
-For the full powerline look in Apple Terminal, set its profile font to a Nerd
-Font instead.
+`statusline.zsh` is the original, kept only for reference.
 
 ## Supported agents
 
-The script only works where the agent runs a user-defined command and pipes
-session JSON to its stdin:
-
-| Agent              | Supported | How                                                             |
-| ------------------ | --------- | -------------------------------------------------------------- |
-| Claude Code        | ✅        | `statusLine.command` in `settings.json`                        |
-| GitHub Copilot CLI | ✅        | `statusLine.command` in `~/.copilot/settings.json` (experimental) |
-| Codex CLI          | ❌        | Built-in footer only (`tui.status_line` enum); no command hook |
-| Gemini CLI         | ❌        | Built-in footer only (`ui.footer.*`); no command hook          |
-| other / future     | ⚠️        | `--adapter generic` probes common field names                  |
-
-Codex and Gemini render their status lines internally and never hand the session
-to an external command, so there is nothing to hook into. If either ships a
-command-backed statusline, the `generic` adapter will pick it up.
+The script works only where the agent runs a user-defined command and pipes
+session JSON to its stdin: **Claude Code** (`~/.claude/settings.json`) and **GitHub
+Copilot CLI** (`~/.copilot/settings.json`, experimental). **Codex** and **Gemini**
+render their status lines internally with no command hook, so they can't be driven
+here — if either adds one, the `generic` adapter will pick it up.
 
 ## Setup
 
-This skill is **idempotent** — safe to run again to update the script or change
-config. **Before overwriting anything that already exists, confirm with the
-user; never clobber silently.** Check both before writing:
-
-- **Script** — if `~/.config/agent-statusline/statusline.js` already exists, ask
-  before replacing it (the user may have edited the in-file `CONFIG` block). On
-  yes, overwrite with the skill's copy; on no, keep theirs.
-- **Agent config** — if the target `settings.json` already has a `statusLine`
-  block, show its current `command` and ask before changing it (it may carry a
-  custom theme, padding, or command). On yes, edit **only** the `statusLine`
-  block; on no, leave it as-is.
-
-When editing a `settings.json`, read it first and rewrite only the `statusLine`
-key — preserve every other key and the file's formatting. If neither the script
-nor the block exists, this is a fresh install: proceed without prompting.
+The skill is **idempotent** — safe to re-run to update the script or change config.
+**Never clobber silently:** before overwriting an existing
+`~/.config/agent-statusline/statusline.js` or an existing `statusLine` block in a
+`settings.json`, show what's there and confirm — the user may have edited the
+in-file `CONFIG` block or set a custom theme/command. When editing a
+`settings.json`, rewrite only the `statusLine` key and preserve everything else. A
+fresh install (neither exists) proceeds without prompting.
 
 ### 1. Copy the script to a stable location
 
-Install the script **outside the skill directory** and point the agent there. A
-skill is transient — it can be uninstalled, updated, or installed at a
-project/local scope instead of globally — and any of those moves or removes
-`skills/statusline-install/`, which would break a `statusLine.command` that
-referenced the script in place. Copy it to a fixed home that does not move with
-the skill (this is also where the optional `segments.conf` lives), and a single
-copy serves every agent since the adapter is auto-detected:
+Install it **outside the skill directory**: a skill can be moved, updated, or
+uninstalled, any of which would break a `statusLine.command` that pointed into it.
+One copy serves every agent (the adapter auto-detects), and it's also where the
+optional `segments.conf` lives.
 
 ```sh
 mkdir -p ~/.config/agent-statusline
@@ -103,170 +65,49 @@ cp scripts/statusline.js ~/.config/agent-statusline/statusline.js
 
 ### 2. Point the agent at it
 
-#### Claude Code — `~/.claude/settings.json`
+Claude Code — `~/.claude/settings.json` (keep `"padding": 0`):
 
 ```json
-{
-  "statusLine": {
-    "type": "command",
-    "command": "node ~/.config/agent-statusline/statusline.js",
-    "padding": 0
-  }
-}
+{ "statusLine": { "type": "command", "command": "node ~/.config/agent-statusline/statusline.js", "padding": 0 } }
 ```
 
-#### GitHub Copilot CLI — `~/.copilot/settings.json`
+GitHub Copilot CLI — `~/.copilot/settings.json`:
 
 ```json
-{
-  "statusLine": {
-    "type": "command",
-    "command": "node ~/.config/agent-statusline/statusline.js"
-  }
-}
+{ "statusLine": { "type": "command", "command": "node ~/.config/agent-statusline/statusline.js" } }
 ```
 
-### Windows
+**Windows:** the command runs through Git Bash or PowerShell. Use a full path with
+forward slashes if `~` doesn't expand
+(`node C:/Users/you/.config/agent-statusline/statusline.js`); `node` and `git`
+must be on `PATH`.
 
-Both agents run the command through Git Bash (if installed) or PowerShell;
-`node ...` works in both. Copy the script to a stable location there too and use
-**forward slashes** with a full path if `~` doesn't expand:
+## Troubleshooting
 
-```json
-{ "statusLine": { "type": "command", "command": "node C:/Users/you/.config/agent-statusline/statusline.js" } }
-```
-
-`node` and `git` must be on `PATH`.
-
-## Adapters
-
-The adapter is auto-detected from the payload shape. Copilot is tested before
-Claude because Copilot's payload now also carries Claude-style `context_window`
-fields; only Copilot has the `current_context_*` display view. The previous zsh
-version misdetected Claude as Copilot and read the wrong field paths, which left
-the bar stuck on "waiting for first exchange" — `statusline.js` fixes this.
-
-Force an adapter with `--adapter claude-code | copilot | generic`.
+- **Separators show as tofu (`▯`)** — the angled glyphs (`U+E0B0`/`U+E0B1`) need a
+  [powerline/Nerd font](https://github.com/romkatv/powerlevel10k#fonts). The script
+  auto-degrades to a plain `│` on terminals known to lack them (Apple Terminal,
+  VS Code); force the choice with `--powerline` / `--no-powerline`. For the full
+  look in Apple Terminal, set its profile font to a Nerd Font.
+- **Stuck on "waiting for first exchange" or blank** — the bar needs the first
+  model response to populate the context window. If it persists, run with `--debug`
+  to log raw payloads to `$TMPDIR/statusline-debug.log` and inspect the shape.
 
 ## Configuration
 
-Everything tunable lives in a `CONFIG` block at the top of
-`scripts/statusline.js` — edit the defaults there. Each value also takes an
-environment-variable override, so you can tweak an install without forking the
-file. Print the resolved config with `node scripts/statusline.js --dump-config`.
-
-### Segments
-
-Show or hide any value. A disabled segment drops its divider with it (no
-dangling separators). Defaults live in the `SEGMENTS` object; override one with
-`STATUSLINE_SHOW_<NAME>=true|false`:
-
-| Segment | Env override | Shows |
-| --- | --- | --- |
-| `model` | `STATUSLINE_SHOW_MODEL` | model name after the agent, plus the reasoning effort in brackets (e.g. `Opus 4.8 [high]`) when the agent reports it |
-| `gitBranch` | `STATUSLINE_SHOW_GITBRANCH` | git branch + dirty marker |
-| `context` | `STATUSLINE_SHOW_CONTEXT` | ctx tokens used / limit |
-| `gauge` | `STATUSLINE_SHOW_GAUGE` | context-window fill gauge |
-| `duration` | `STATUSLINE_SHOW_DURATION` | elapsed session time |
-| `limits` | `STATUSLINE_SHOW_LIMITS` | Claude usage limits |
-| `credits` | `STATUSLINE_SHOW_CREDITS` | Copilot session AI credits (`⚡`) |
-| `lines` | `STATUSLINE_SHOW_LINES` | +added / -removed |
-| `custom` | `STATUSLINE_SHOW_CUSTOM` | custom env-var segments |
+Defaults live in the `CONFIG` block at the top of `statusline.js`; every value also
+takes an env-var override, so an install can be tuned without forking the file.
+Print the resolved config with `node statusline.js --dump-config`. Common knobs:
 
 ```sh
-# hide the gauge and line counts (their dividers go too)
-STATUSLINE_SHOW_GAUGE=false STATUSLINE_SHOW_LINES=false
+STATUSLINE_THEME=dracula                       # named palette (10 built in)
+STATUSLINE_SHOW_GAUGE=false                    # hide a segment (its divider goes too)
+STATUSLINE_AMBER_AT=50 STATUSLINE_RED_AT=80    # percent color thresholds
 ```
 
-### Percent thresholds
-
-The gauge and usage-limit percentages step green → amber → red at these cutoffs
-(`PERCENT` in the config):
-
-```sh
-STATUSLINE_AMBER_AT=50   # >= this is amber
-STATUSLINE_RED_AT=80     # >= this is red
-```
-
-### Themes
-
-Colors come from a named palette. Select one with `STATUSLINE_THEME`. Built-ins:
-
-- `p10k` (default) and `mono` — neutral palettes.
-- `dracula`, `nord`, `gruvbox`, `tokyonight`, `catppuccin`, `onedark`,
-  `solarized`, `monokai` — matched to the real editor palettes.
-
-All built-in palettes are truecolor `#rrggbb`, so they need a 24-bit-color
-terminal (most modern ones qualify). Add your own by adding a key to the
-`THEMES` object (same keys as `p10k`); a color value is a `#rrggbb` string or a
-256-color code (number).
-Override individual colors without forking via `STATUSLINE_COLORS`
-(`key=value`, comma-separated; value is a code or hex):
-
-```sh
-STATUSLINE_THEME=dracula
-STATUSLINE_COLORS="agent=#ff79c6,gaugeHi=#ff5555"
-```
-
-The repo's "Statusline preview" CI workflow renders every theme to an SVG
-artifact for visual review.
-
-### Font
-
-Applies only to image/SVG rendering (the terminal owns the font for live
-output); the preview workflow reads it via `--dump-config`. Defaults in `FONT`:
-
-```sh
-STATUSLINE_FONT_FAMILY="'JetBrains Mono', monospace"
-STATUSLINE_FONT_WEIGHT=bold
-STATUSLINE_FONT_SIZE=16
-```
-
-## Custom segments
-
-Add environment-variable segments via `STATUSLINE_CUSTOM_SEGMENTS`
-(`ENV_VAR:label:color`, comma-separated) or one entry per line in
-`~/.config/agent-statusline/segments.conf`. They render only when the variable
-is set:
-
-```sh
-export STATUSLINE_CUSTOM_SEGMENTS="AWS_PROFILE:aws:208,KUBECONTEXT:k8s:134"
-```
-
-## Usage limits
-
-For **Claude Pro/Max** accounts, the payload carries `rate_limits` for the
-5-hour session window and the 7-day weekly window. The bar shows each as percent
-used with the reset countdown in parens, e.g. `5h 13% (4h) · wk 9% (3d)`,
-colored by consumption (green → amber → red as it climbs). Only
-`used_percentage` and `resets_at` are exposed — there is no absolute token
-count — so the value is a percentage.
-
-The segment auto-hides when `rate_limits` is absent (non-subscription accounts,
-or before the first response). Disable it with `STATUSLINE_LIMITS=false`.
-
-GitHub Copilot does **not** expose an account-level quota or remaining balance in
-its statusline payload, so the Claude-style "usage left" limits segment can't be
-computed for it. It does, however, report **session** AI-credit usage —
-`ai_used.formatted` (preferred) or `ai_used.total_nano_aiu` — the same figure
-Copilot's `/usage` prints. The `credits` segment renders it as `⚡<value>` and
-auto-hides when those fields are absent (e.g. for Claude).
-
-## Flags & environment
-
-| Flag / variable                             | Effect                                         |
-| ------------------------------------------- | ---------------------------------------------- |
-| `--adapter <name>`                          | Force `claude-code`, `copilot`, or `generic`   |
-| `STATUSLINE_LIMITS=false`                   | Hide the Claude usage-limit segment (default shown when present) |
-| `--no-color` / `STATUSLINE_USE_COLOR=false` | Plain output with `│` separators, no color     |
-| `--powerline` / `--no-powerline` (`--plain`) | Force powerline glyphs on/off (default auto by `TERM_PROGRAM`) |
-| `STATUSLINE_POWERLINE=auto\|true\|false`    | Same as above via env; `auto` degrades on Apple Terminal / VS Code |
-| `STATUSLINE_BRANCH=<name>`                  | Override the git branch label (for screenshots/demos); dirty marker still reflects `cwd` |
-| `--debug` / `STATUSLINE_DEBUG=true`         | Log raw payloads to `$TMPDIR/statusline-debug.log` |
-| `--dump-config`                             | Print resolved theme, colors, segments, and font as JSON |
-
-See [Configuration](#configuration) for segment toggles, percent thresholds,
-themes, and font.
+For the complete reference — adapters, every segment and theme, font, Claude/Copilot
+usage & quota mechanics, custom segments, and the full flag/env table — read
+[`references/reference.md`](references/reference.md).
 
 ## Verify
 

@@ -41,10 +41,15 @@ export function dumpConfig() {
 }
 
 // Render one powerline bar from the real statusline.js. A fixed branch keeps the
-// output stable across machines; a theme is applied via env when given.
-export function renderBar(payload, theme) {
-  const env = { ...process.env, STATUSLINE_BRANCH: 'feat/statusline' };
+// output stable across machines; a theme is applied via env when given. `quota`
+// ("usedPct[:resetLabel]") injects the Copilot monthly quota so the preview is
+// deterministic and never hits the network; it's cleared otherwise so an ambient
+// STATUSLINE_QUOTA can't leak into the Claude bars.
+export function renderBar(payload, theme, quota) {
+  const env = { ...process.env, STATUSLINE_BRANCH: 'feat/statusline', STATUSLINE_DIRTY: 'true' };
   if (theme) env.STATUSLINE_THEME = theme;
+  if (quota) env.STATUSLINE_QUOTA = quota;
+  else delete env.STATUSLINE_QUOTA;
   return execFileSync(process.execPath, [script, '--powerline'], {
     input: JSON.stringify(payload),
     encoding: 'utf8',
@@ -70,7 +75,7 @@ export function payloads(cwd, now) {
     },
   });
   const copilot = {
-    model: { id: 'claude-haiku-4.5' },
+    model: { id: 'gpt-5.4', display_name: 'gpt-5.4 · medium' },
     cwd,
     context_window: {
       current_context_tokens: 42_000,
@@ -97,13 +102,14 @@ export function renderAll(cases) {
   const byId = {};
   for (const section of cases)
     for (const group of section.groups)
-      for (const bar of group.bars) byId[bar.id] = renderBar(bar.payload, bar.theme);
+      for (const bar of group.bars) byId[bar.id] = renderBar(bar.payload, bar.theme, bar.quota);
   return byId;
 }
 
 export function buildCases({ cwd, now, themes }) {
   const { claude, copilot, copilotAt } = payloads(cwd, now);
   const themed = claude(34, 13, 48);
+  const COPILOT_QUOTA = '28:2d'; // monthly quota injected for deterministic, network-free previews
 
   return [
     {
@@ -115,7 +121,14 @@ export function buildCases({ cwd, now, themes }) {
         },
         {
           label: 'Copilot',
-          bars: [{ id: 'harness-copilot', payload: copilot, expect: ['Copilot', 'ctx', '⚡ 8.4'] }],
+          bars: [
+            {
+              id: 'harness-copilot',
+              payload: copilot,
+              quota: COPILOT_QUOTA,
+              expect: ['Copilot', 'gpt-5.4 · medium', 'ctx', '⚡ 8.4', 'mth 28%'],
+            },
+          ],
         },
       ],
     },
@@ -125,21 +138,21 @@ export function buildCases({ cwd, now, themes }) {
         label: theme,
         bars: [
           { id: `theme-${theme}-claude`, payload: themed, theme },
-          { id: `theme-${theme}-copilot`, payload: copilot, theme },
+          { id: `theme-${theme}-copilot`, payload: copilot, theme, quota: COPILOT_QUOTA },
         ],
       })),
     },
     {
       title: 'Usage % — green · amber · red',
       groups: [
-        ['green', 20, 18, 24],
-        ['amber', 60, 58, 64],
-        ['red', 92, 88, 95],
-      ].map(([level, used, fiveH, sevenD]) => ({
+        ['green', 20, 18, 24, '24:12d'],
+        ['amber', 60, 58, 64, '60:8h'],
+        ['red', 92, 88, 95, '92:45m'],
+      ].map(([level, used, fiveH, sevenD, quota]) => ({
         label: level,
         bars: [
           { id: `usage-${level}-claude`, payload: claude(used, fiveH, sevenD) },
-          { id: `usage-${level}-copilot`, payload: copilotAt(used) },
+          { id: `usage-${level}-copilot`, payload: copilotAt(used), quota },
         ],
       })),
     },
