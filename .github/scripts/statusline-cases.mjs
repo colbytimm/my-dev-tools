@@ -91,6 +91,16 @@ export function payloads(cwd, now) {
   return { claude, copilot, copilotAt };
 }
 
+// Render every bar in the cases once, keyed by bar id. Used by the showcase to
+// compose the SVG and by the preview to log/assert and compose the same SVG.
+export function renderAll(cases) {
+  const byId = {};
+  for (const section of cases)
+    for (const group of section.groups)
+      for (const bar of group.bars) byId[bar.id] = renderBar(bar.payload, bar.theme);
+  return byId;
+}
+
 export function buildCases({ cwd, now, themes }) {
   const { claude, copilot, copilotAt } = payloads(cwd, now);
   const themed = claude(34, 13, 48);
@@ -105,7 +115,7 @@ export function buildCases({ cwd, now, themes }) {
         },
         {
           label: 'Copilot',
-          bars: [{ id: 'harness-copilot', payload: copilot, expect: ['Copilot', 'ctx', '⚡8.4'] }],
+          bars: [{ id: 'harness-copilot', payload: copilot, expect: ['Copilot', 'ctx', '⚡ 8.4'] }],
         },
       ],
     },

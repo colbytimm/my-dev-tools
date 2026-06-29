@@ -626,7 +626,7 @@ function buildBar(session, gitInfo) {
   }
 
   if (segments.credits && session.credits) {
-    parts.push(`${fg(colors.ctxLabel)} ⚡${fg(colors.ctx)}${session.credits} `);
+    parts.push(`${fg(colors.ctxLabel)} ⚡ ${fg(colors.ctx)}${session.credits} `);
   }
 
   if (
