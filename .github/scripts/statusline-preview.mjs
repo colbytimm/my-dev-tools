@@ -91,6 +91,14 @@ const copilot = {
   cost: { total_duration_ms: 1_054_000, total_lines_added: 10, total_lines_removed: 4 },
   ai_used: { formatted: '8.4', total_nano_aiu: 8_400_000_000 },
 };
+const copilotAt = (pct) => ({
+  ...copilot,
+  context_window: {
+    current_context_tokens: Math.round((pct / 100) * 160_000),
+    displayed_context_limit: 160_000,
+    current_context_used_percentage: pct,
+  },
+});
 
 // ── ANSI → SVG ────────────────────────────────────────────────
 const PAD = 8; // left/right inner padding around the bar
@@ -176,21 +184,22 @@ for (const [agent, payload, expect] of adapterCases) {
   emit(`${agent} (plain)`, out, `adapter-${agent}`);
 }
 
-// B. Theme gallery
+// B. Theme gallery (Claude + Copilot per theme)
 for (const theme of CFG.availableThemes) {
-  const out = render(claude(34, 13, 48), ['--powerline'], { STATUSLINE_THEME: theme });
-  emit(`theme: ${theme}`, out, `theme-${theme}`);
+  const env = { STATUSLINE_THEME: theme };
+  emit(`theme: ${theme} (claude)`, render(claude(34, 13, 48), ['--powerline'], env), `theme-${theme}-claude`);
+  emit(`theme: ${theme} (copilot)`, render(copilot, ['--powerline'], env), `theme-${theme}-copilot`);
 }
 
-// C. Percent examples (default theme)
+// C. Percent examples (default theme) — Claude limits + gauge, Copilot gauge
 const levels = [
   ['green', 20, 18, 24],
   ['amber', 60, 58, 64],
   ['red', 92, 88, 95],
 ];
 for (const [name, used, fiveH, sevenD] of levels) {
-  const out = render(claude(used, fiveH, sevenD), ['--powerline']);
-  emit(`percent: ${name} (~${used}%)`, out, `percent-${name}`);
+  emit(`percent: ${name} (~${used}%, claude)`, render(claude(used, fiveH, sevenD), ['--powerline']), `percent-${name}-claude`);
+  emit(`percent: ${name} (~${used}%, copilot)`, render(copilotAt(used), ['--powerline']), `percent-${name}-copilot`);
 }
 
 if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, md);
