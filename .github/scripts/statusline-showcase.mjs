@@ -64,17 +64,32 @@ function render(payload, theme) {
   });
 }
 
+const copilotAt = (pct) => ({
+  ...copilot,
+  context_window: {
+    current_context_tokens: Math.round((pct / 100) * 160_000),
+    displayed_context_limit: 160_000,
+    current_context_used_percentage: pct,
+  },
+});
+
 // ── rows ──────────────────────────────────────────────────────
 const rows = [
   { section: 'Harnesses' },
   { label: 'Claude', ansi: render(claude(34, 13, 48)) },
   { label: 'Copilot', ansi: render(copilot) },
   { section: 'Themes' },
-  ...CFG.availableThemes.map((t) => ({ label: t, ansi: render(claude(34, 13, 48), t) })),
+  ...CFG.availableThemes.flatMap((t) => [
+    { label: t, ansi: render(claude(34, 13, 48), t) },
+    { label: '↳ copilot', ansi: render(copilot, t) },
+  ]),
   { section: 'Usage % — green · amber · red' },
   { label: 'green', ansi: render(claude(20, 18, 24)) },
+  { label: '↳ copilot', ansi: render(copilotAt(20)) },
   { label: 'amber', ansi: render(claude(60, 58, 64)) },
+  { label: '↳ copilot', ansi: render(copilotAt(60)) },
   { label: 'red', ansi: render(claude(92, 88, 95)) },
+  { label: '↳ copilot', ansi: render(copilotAt(92)) },
 ];
 
 // ── ANSI → SVG row ────────────────────────────────────────────

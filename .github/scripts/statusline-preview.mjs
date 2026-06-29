@@ -122,29 +122,28 @@ function ansiToSvg(ansi) {
 
 // ── Run ───────────────────────────────────────────────────────
 let md = `## Statusline preview — ${osLabel} \`${process.platform}\`, Node ${process.version}\n\n`;
-md +=
-  '> Powerline separators show as `❯` in the text previews (the summary font has no patched glyphs); the SVG artifacts draw them as real shapes.\n\n';
 
 // GitHub sanitizes the summary's Markdown — it won't interpret ANSI color or
-// inline data-URI images — so the live bars below render as plain text. Embed the
-// committed showcase SVG by raw URL (a real https source survives sanitization)
-// to give the summary a full-color reference. PR `GITHUB_SHA` is an ephemeral
-// merge commit raw.githubusercontent won't serve, so the workflow passes the head
-// SHA via PREVIEW_SHA.
+// inline data-URI images — so the summary shows the committed showcase SVG by raw
+// URL (a real https source survives sanitization) for a full-color reference. The
+// live per-OS bars print to the run log (in color) and upload as SVG artifacts;
+// they're intentionally not duplicated here as colorless text. PR `GITHUB_SHA` is
+// an ephemeral merge commit raw.githubusercontent won't serve, so the workflow
+// passes the head SHA via PREVIEW_SHA.
 const repo = process.env.GITHUB_REPOSITORY;
 const previewSha = process.env.PREVIEW_SHA || process.env.GITHUB_SHA;
 if (repo && previewSha) {
   const url = `https://raw.githubusercontent.com/${repo}/${previewSha}/docs/images/statusline-showcase.svg`;
-  md += `### Full-color showcase\n\n`;
   md += `![statusline showcase](${url})\n\n`;
-  md += `_Committed reference render (same on every OS). The per-OS bars below are this run's live output — plain text, since GitHub summaries don't render ANSI color._\n\n`;
 }
+md += `_Full-color showcase above (Claude + Copilot across every theme and usage level). This run's live per-OS bars are in the job log (in color) and uploaded as \`statusline-preview-${process.platform}\` SVG artifacts — GitHub summaries can't render ANSI color, so they're not repeated here as plain text._\n\n`;
 
 let failures = 0;
 
 function emit(label, ansi, svgName) {
+  // Colored bars go to the run log (ANSI-aware); the summary shows the SVG
+  // showcase instead, since its sanitized Markdown can't render ANSI color.
   process.stdout.write(`\n\x1b[1m[${osLabel}] ${label}\x1b[0m\n${chevronize(ansi)}\n`);
-  md += `**${label}**\n\n\`\`\`\n${chevronize(stripAnsi(ansi))}\n\`\`\`\n\n`;
   if (svgName) {
     try {
       writeFileSync(path.join(outDir, `${process.platform}-${svgName}.svg`), ansiToSvg(ansi));
@@ -155,7 +154,6 @@ function emit(label, ansi, svgName) {
 }
 
 // A. Adapters (cross-OS smoke)
-md += '### Adapters\n\n';
 const adapterCases = [
   ['Claude', claude(26, 13, 64), ['Claude', '[high]', 'ctx', '5h']],
   ['Copilot', copilot, ['Copilot', 'ctx', '⚡8.4']],
@@ -179,14 +177,12 @@ for (const [agent, payload, expect] of adapterCases) {
 }
 
 // B. Theme gallery
-md += '### Themes\n\n';
 for (const theme of CFG.availableThemes) {
   const out = render(claude(34, 13, 48), ['--powerline'], { STATUSLINE_THEME: theme });
   emit(`theme: ${theme}`, out, `theme-${theme}`);
 }
 
 // C. Percent examples (default theme)
-md += '### Percent colors (green / amber / red)\n\n';
 const levels = [
   ['green', 20, 18, 24],
   ['amber', 60, 58, 64],
