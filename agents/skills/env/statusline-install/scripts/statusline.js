@@ -62,6 +62,7 @@ const SEGMENTS = {
   gauge: true, // context-window fill gauge
   duration: true, // elapsed session time
   limits: true, // Claude usage limits (5h / weekly)
+  credits: true, // Copilot session AI credits
   lines: true, // +added / -removed line counts
   custom: true, // custom env-var segments
 };
@@ -395,6 +396,15 @@ function normalize(adapter, data) {
     durationMs: null,
     linesAdded: 0,
     linesRemoved: 0,
+    credits: null,
+  };
+
+  const readCredits = () => {
+    const formatted = read('ai_used.formatted');
+    if (formatted !== null) return formatted;
+    const nano = num(read('ai_used.total_nano_aiu'));
+    if (nano !== null) return `${(nano / 1e9).toFixed(2)} cr`;
+    return null;
   };
 
   switch (adapter) {
@@ -408,6 +418,7 @@ function normalize(adapter, data) {
       session.durationMs = read('cost.total_duration_ms');
       session.linesAdded = read('cost.total_lines_added') ?? 0;
       session.linesRemoved = read('cost.total_lines_removed') ?? 0;
+      session.credits = readCredits();
       break;
 
     case 'claude-code': {
@@ -452,6 +463,7 @@ function normalize(adapter, data) {
       session.linesAdded = read('cost.total_lines_added', 'cost.lines_added', 'lines_added') ?? 0;
       session.linesRemoved =
         read('cost.total_lines_removed', 'cost.lines_removed', 'lines_removed') ?? 0;
+      session.credits = readCredits();
       break;
   }
 
@@ -611,6 +623,10 @@ function buildBar(session, gitInfo) {
       );
     });
     parts.push(` ${lim.join(`${fg(colors.subsep)} · `)} `);
+  }
+
+  if (segments.credits && session.credits) {
+    parts.push(`${fg(colors.ctxLabel)} ⚡ ${fg(colors.ctx)}${session.credits} `);
   }
 
   if (
