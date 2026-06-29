@@ -146,8 +146,8 @@ export function buildCases({ cwd, now, themes }) {
       title: 'Usage % — green · amber · red',
       groups: [
         ['green', 20, 18, 24, '24:12d'],
-        ['amber', 60, 58, 64, '60:6d'],
-        ['red', 92, 88, 95, '92:2d'],
+        ['amber', 60, 58, 64, '60:8h'],
+        ['red', 92, 88, 95, '92:45m'],
       ].map(([level, used, fiveH, sevenD, quota]) => ({
         label: level,
         bars: [
