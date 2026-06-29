@@ -284,7 +284,8 @@ and skips the network — used for the preview CI and for screenshots.
 | `--no-color` / `STATUSLINE_USE_COLOR=false` | Plain output with `│` separators, no color     |
 | `--powerline` / `--no-powerline` (`--plain`) | Force powerline glyphs on/off (default auto by `TERM_PROGRAM`) |
 | `STATUSLINE_POWERLINE=auto\|true\|false`    | Same as above via env; `auto` degrades on Apple Terminal / VS Code |
-| `STATUSLINE_BRANCH=<name>`                  | Override the git branch label (for screenshots/demos); dirty marker still reflects `cwd` |
+| `STATUSLINE_BRANCH=<name>`                  | Override the git branch label (for screenshots/demos); dirty marker reflects `cwd` unless `STATUSLINE_DIRTY` is set |
+| `STATUSLINE_DIRTY=true\|false`              | Force the git dirty marker on/off instead of probing `cwd` (deterministic screenshots/demos) |
 | `--debug` / `STATUSLINE_DEBUG=true`         | Log raw payloads to `$TMPDIR/statusline-debug.log` |
 | `--dump-config`                             | Print resolved theme, colors, segments, and font as JSON |
 

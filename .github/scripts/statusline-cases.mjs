@@ -46,7 +46,7 @@ export function dumpConfig() {
 // deterministic and never hits the network; it's cleared otherwise so an ambient
 // STATUSLINE_QUOTA can't leak into the Claude bars.
 export function renderBar(payload, theme, quota) {
-  const env = { ...process.env, STATUSLINE_BRANCH: 'feat/statusline' };
+  const env = { ...process.env, STATUSLINE_BRANCH: 'feat/statusline', STATUSLINE_DIRTY: 'true' };
   if (theme) env.STATUSLINE_THEME = theme;
   if (quota) env.STATUSLINE_QUOTA = quota;
   else delete env.STATUSLINE_QUOTA;

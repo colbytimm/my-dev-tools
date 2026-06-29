@@ -525,7 +525,14 @@ function resolveGit(cwd) {
   if (branch.length > MAX_BRANCH_LEN) {
     branch = `${branch.slice(0, BRANCH_KEEP)}…${branch.slice(-BRANCH_KEEP)}`;
   }
-  const dirty = validCwd && git(['status', '--porcelain'], cwd) ? '!' : '';
+  const dirtyOverride = (env.STATUSLINE_DIRTY ?? '').trim().toLowerCase();
+  const dirty = dirtyOverride
+    ? ['true', '1', '!'].includes(dirtyOverride)
+      ? '!'
+      : ''
+    : validCwd && git(['status', '--porcelain'], cwd)
+      ? '!'
+      : '';
   return { branch, dirty };
 }
 
