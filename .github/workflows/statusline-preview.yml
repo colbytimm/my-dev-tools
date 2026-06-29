@@ -5,7 +5,7 @@ on:
   pull_request:
     paths:
       - 'agents/skills/env/statusline-install/**'
-      - '.github/scripts/statusline-preview.mjs'
+      - '.github/scripts/*.mjs'
       - '.github/workflows/statusline-preview.yml'
 
 permissions:
