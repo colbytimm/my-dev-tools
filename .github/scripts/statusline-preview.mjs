@@ -35,7 +35,7 @@ for (const section of cases) {
     for (const bar of group.bars) {
       let ansi;
       try {
-        ansi = renderBar(bar.payload, bar.theme);
+        ansi = renderBar(bar.payload, bar.theme, bar.quota);
       } catch (e) {
         failures++;
         console.error(`[${osLabel}] ${bar.id}: ${e.message}`);

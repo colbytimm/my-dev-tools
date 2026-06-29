@@ -170,6 +170,7 @@ dangling separators). Defaults live in the `SEGMENTS` object; override one with
 | `duration` | `STATUSLINE_SHOW_DURATION` | elapsed session time |
 | `limits` | `STATUSLINE_SHOW_LIMITS` | Claude usage limits |
 | `credits` | `STATUSLINE_SHOW_CREDITS` | Copilot session AI credits (`⚡`) |
+| `quota` | `STATUSLINE_SHOW_QUOTA` | Copilot monthly premium-request quota (`mth NN%`) |
 | `lines` | `STATUSLINE_SHOW_LINES` | +added / -removed |
 | `custom` | `STATUSLINE_SHOW_CUSTOM` | custom env-var segments |
 
@@ -245,12 +246,31 @@ count — so the value is a percentage.
 The segment auto-hides when `rate_limits` is absent (non-subscription accounts,
 or before the first response). Disable it with `STATUSLINE_LIMITS=false`.
 
-GitHub Copilot does **not** expose an account-level quota or remaining balance in
-its statusline payload, so the Claude-style "usage left" limits segment can't be
-computed for it. It does, however, report **session** AI-credit usage —
-`ai_used.formatted` (preferred) or `ai_used.total_nano_aiu` — the same figure
-Copilot's `/usage` prints. The `credits` segment renders it as `⚡<value>` and
-auto-hides when those fields are absent (e.g. for Claude).
+For **GitHub Copilot**, two independent segments cover usage — toggle each
+separately:
+
+- **`credits` (session)** — the AI-credit usage for *this session*, from the
+  payload's `ai_used.formatted` (preferred) or `ai_used.total_nano_aiu`, the same
+  figure Copilot's `/usage` prints. Rendered as `⚡<value>`; auto-hides when the
+  fields are absent (e.g. for Claude).
+- **`quota` (monthly)** — the *account's* monthly premium-request quota, rendered
+  Claude-style as `mth NN% (reset)` and colored green → amber → red by
+  consumption (`NN%` = **percent used**, climbing 0 → 100). The reset countdown
+  shows days, hours, or minutes as it nears.
+
+Copilot's statusline payload carries **only** session figures, not the monthly
+quota — its own bar fetches that from `https://api.github.com/copilot_internal/user`
+(`quota_snapshots.premium_interactions.percent_remaining`, where used =
+`100 − percent_remaining`). The `quota` segment does the same. To avoid blocking
+the render on a network call, the response is cached at
+`~/.config/agent-statusline/quota-cache.json` for `STATUSLINE_QUOTA_TTL` seconds
+(default 120); a stale cache is reused if the call fails. The fetch needs a GitHub
+token, resolved in order: `COPILOT_GITHUB_TOKEN` / `GH_TOKEN` / `GITHUB_TOKEN`,
+then `~/.config/github-copilot/apps.json` (`oauth_token`), then
+`~/.copilot/config.json` (`copilot_tokens`), then `gh auth token`. The segment
+auto-hides when no token, network, or cache is available (so it's silent for
+Claude and for non-Copilot use). `STATUSLINE_QUOTA="NN[:reset]"` injects a value
+and skips the network — used for the preview CI and for screenshots.
 
 ## Flags & environment
 
@@ -258,6 +278,9 @@ auto-hides when those fields are absent (e.g. for Claude).
 | ------------------------------------------- | ---------------------------------------------- |
 | `--adapter <name>`                          | Force `claude-code`, `copilot`, or `generic`   |
 | `STATUSLINE_LIMITS=false`                   | Hide the Claude usage-limit segment (default shown when present) |
+| `STATUSLINE_QUOTA="NN[:reset]"`             | Inject the Copilot monthly quota (skips the network; for previews/screenshots) |
+| `STATUSLINE_QUOTA_TTL=<seconds>`            | Quota cache lifetime before a re-fetch (default 120) |
+| `STATUSLINE_QUOTA_TIMEOUT=<ms>`             | Quota API request timeout (default 2500)        |
 | `--no-color` / `STATUSLINE_USE_COLOR=false` | Plain output with `│` separators, no color     |
 | `--powerline` / `--no-powerline` (`--plain`) | Force powerline glyphs on/off (default auto by `TERM_PROGRAM`) |
 | `STATUSLINE_POWERLINE=auto\|true\|false`    | Same as above via env; `auto` degrades on Apple Terminal / VS Code |

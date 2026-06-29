@@ -63,6 +63,7 @@ const SEGMENTS = {
   duration: true, // elapsed session time
   limits: true, // Claude usage limits (5h / weekly)
   credits: true, // Copilot session AI credits
+  quota: true, // Copilot monthly premium-request quota
   lines: true, // +added / -removed line counts
   custom: true, // custom env-var segments
 };
@@ -288,6 +289,14 @@ function formatReset(epochSec) {
   return `${Math.floor(secs / SECONDS_PER.minute)}m`;
 }
 
+function resetFromDate(dateStr) {
+  if (!dateStr) return '';
+  const iso = String(dateStr).length <= 10 ? `${dateStr}T00:00:00Z` : dateStr;
+  const ms = Date.parse(iso);
+  if (!Number.isFinite(ms)) return '';
+  return formatReset(ms / 1000);
+}
+
 function percentColor(pct) {
   if (!useColor) return '';
   if (pct >= redAt) return fg(colors.gaugeHi);
@@ -397,6 +406,7 @@ function normalize(adapter, data) {
     linesAdded: 0,
     linesRemoved: 0,
     credits: null,
+    quota: null,
   };
 
   const readCredits = () => {
@@ -410,7 +420,7 @@ function normalize(adapter, data) {
   switch (adapter) {
     case 'copilot':
       session.agentName = 'Copilot';
-      session.model = read('model.id', 'model.display_name');
+      session.model = read('model.display_name', 'model.id');
       session.cwd = read('cwd', 'workspace.current_dir');
       session.ctxCurrent = read('context_window.current_context_tokens');
       session.ctxLimit = read('context_window.displayed_context_limit');
@@ -629,6 +639,16 @@ function buildBar(session, gitInfo) {
     parts.push(`${fg(colors.ctxLabel)} ⚡ ${fg(colors.ctx)}${session.credits} `);
   }
 
+  if (segments.quota && session.quota && num(session.quota.usedPct) !== null) {
+    const used = clampPercent(session.quota.usedPct);
+    const reset = session.quota.resetLabel ?? resetFromDate(session.quota.resetDate);
+    parts.push(
+      `${fg(colors.ctxLabel)} mth ${percentColor(used)}${used}%` +
+        (reset ? `${fg(colors.time)} (${reset})` : '') +
+        ' '
+    );
+  }
+
   if (
     segments.lines &&
     (String(session.linesAdded) !== '0' || String(session.linesRemoved) !== '0')
@@ -646,12 +666,134 @@ function buildBar(session, gitInfo) {
   return out + rst();
 }
 
-function main() {
+// ── Copilot monthly quota ─────────────────────────────────────
+// Copilot's stdin payload carries only session usage (ai_used, premium
+// requests), not the account's monthly premium-request quota — that lives
+// behind https://api.github.com/copilot_internal/user, which Copilot itself
+// queries for its built-in bar. We fetch it the same way, cache it on disk so
+// rendering never blocks on the network, and serve a stale cache if the call
+// fails. STATUSLINE_QUOTA="usedPct[:resetLabel]" injects a value (previews,
+// screenshots) and skips the network entirely.
+const QUOTA_API = 'https://api.github.com/copilot_internal/user';
+const QUOTA_CACHE_TTL_MS = (num(env.STATUSLINE_QUOTA_TTL) ?? 120) * 1000;
+const QUOTA_TIMEOUT_MS = num(env.STATUSLINE_QUOTA_TIMEOUT) ?? 2500;
+
+function quotaCachePath() {
+  return path.join(os.homedir(), '.config', 'agent-statusline', 'quota-cache.json');
+}
+
+function readQuotaCache() {
+  try {
+    const p = quotaCachePath();
+    const obj = JSON.parse(fs.readFileSync(p, 'utf8'));
+    if (num(obj.usedPct) === null) return null;
+    return { usedPct: obj.usedPct, resetDate: obj.resetDate ?? null, ageMs: Date.now() - fs.statSync(p).mtimeMs };
+  } catch {
+    return null;
+  }
+}
+
+function writeQuotaCache(quota) {
+  try {
+    const p = quotaCachePath();
+    fs.mkdirSync(path.dirname(p), { recursive: true });
+    fs.writeFileSync(p, JSON.stringify({ usedPct: quota.usedPct, resetDate: quota.resetDate }));
+  } catch {
+    /* best effort */
+  }
+}
+
+// env vars first, then the editor Copilot OAuth tokens, then the Copilot CLI
+// config (Windows layout), then the GitHub CLI.
+function copilotToken() {
+  for (const k of ['COPILOT_GITHUB_TOKEN', 'GH_TOKEN', 'GITHUB_TOKEN']) {
+    if (env[k]) return env[k];
+  }
+  try {
+    const apps = JSON.parse(
+      fs.readFileSync(path.join(os.homedir(), '.config', 'github-copilot', 'apps.json'), 'utf8')
+    );
+    for (const entry of Object.values(apps)) {
+      if (entry && entry.oauth_token) return entry.oauth_token;
+    }
+  } catch {
+    /* no editor token */
+  }
+  try {
+    const cfg = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.copilot', 'config.json'), 'utf8'));
+    const tokens = cfg.copilot_tokens;
+    if (tokens) {
+      const u = cfg.last_logged_in_user;
+      if (u && tokens[`${u.host}:${u.login}`]) return tokens[`${u.host}:${u.login}`];
+      for (const v of Object.values(tokens)) if (v) return v;
+    }
+  } catch {
+    /* no CLI token */
+  }
+  try {
+    const t = execFileSync('gh', ['auth', 'token'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    if (t) return t;
+  } catch {
+    /* no gh */
+  }
+  return null;
+}
+
+async function fetchQuota(token) {
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), QUOTA_TIMEOUT_MS);
+  try {
+    const res = await fetch(QUOTA_API, {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'User-Agent': 'agent-statusline' },
+      signal: ac.signal,
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const remaining = num(data?.quota_snapshots?.premium_interactions?.percent_remaining);
+    if (remaining === null) return null;
+    return {
+      usedPct: Math.round((100 - remaining) * 10) / 10,
+      resetDate: data?.quota_reset_date_utc ?? data?.quota_reset_date ?? null,
+    };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function resolveQuota() {
+  const override = env.STATUSLINE_QUOTA;
+  if (override) {
+    const [pct, label] = override.split(':');
+    const usedPct = num(pct);
+    if (usedPct === null) return null;
+    return { usedPct, resetLabel: (label ?? '').trim() || null };
+  }
+  const cached = readQuotaCache();
+  if (cached && cached.ageMs < QUOTA_CACHE_TTL_MS) return cached;
+  const token = copilotToken();
+  if (!token) return cached;
+  const fresh = await fetchQuota(token);
+  if (fresh) {
+    writeQuotaCache(fresh);
+    return fresh;
+  }
+  return cached;
+}
+
+async function main() {
   const data = readPayload();
   const adapter = adapterOverride === 'auto' ? detectAdapter(data) : adapterOverride;
   const session = normalize(adapter, data);
   const gitInfo = resolveGit(session.cwd);
+  if (segments.quota && (adapter === 'copilot' || env.STATUSLINE_QUOTA)) {
+    session.quota = await resolveQuota();
+  }
   process.stdout.write(buildBar(session, gitInfo));
 }
 
-main();
+main().catch(() => process.exit(0));
