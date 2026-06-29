@@ -625,6 +625,10 @@ function buildBar(session, gitInfo) {
     parts.push(` ${lim.join(`${fg(colors.subsep)} · `)} `);
   }
 
+  if (segments.credits && session.credits) {
+    parts.push(`${fg(colors.ctxLabel)} ⚡${fg(colors.ctx)}${session.credits} `);
+  }
+
   if (
     segments.lines &&
     (String(session.linesAdded) !== '0' || String(session.linesRemoved) !== '0')
@@ -632,10 +636,6 @@ function buildBar(session, gitInfo) {
     parts.push(
       `${fg(colors.add)} +${session.linesAdded}${fg(colors.diff)}/${fg(colors.del)}-${session.linesRemoved} `
     );
-  }
-
-  if (segments.credits && session.credits) {
-    parts.push(`${fg(colors.ctxLabel)} ⚡${fg(colors.ctx)}${session.credits} `);
   }
 
   if (segments.custom) {
